@@ -1,42 +1,34 @@
 # lendup-catalog-service
 
-Microservicio de Catálogo de LendUp (Java 21 y Spring Boot 4, MySQL 8.4).
+Microservicio de Catálogo de LendUp (Java 21, Spring Boot 4, MySQL 8.4).
 
-## Progreso
+## Estado
 
-1. Inicialización de Spring Boot y estructura DDD.
-2. Dominio: publicaciones, categorías, condiciones y disponibilidades.
-3. MySQL 8.4 independiente, Flyway V1 y Docker Compose.
-4. Entidades JPA, repositorios Spring Data y adaptadores.
-5. Paso 6: casos de uso y servicios de aplicación validados (45 pruebas aprobadas en Windows).
-6. **Paso 7: API REST versionada, DTOs, Bean Validation, PATCH parcial, manejo de errores
-   y controles de acceso fail-closed. Pruebas HTTP agregadas; pendientes de ejecutar localmente.**
-
-## Endpoints
-
-Base: `http://localhost:8082/api/v1/catalogo`
-
-- Públicos: `GET /categorias`, `GET /categorias/{id}`,
-  `GET /publicaciones`, `GET /publicaciones/{id}`.
-- Propietario verificado: `GET /mis-publicaciones`; `POST /publicaciones`;
-  `PUT/PATCH /publicaciones/{id}`, `PATCH /publicaciones/{id}/estado`,
-  y `GET/POST/PUT/DELETE` de sus disponibilidades.
-
-**Atención:** aún no hay autenticación HTTP Firebase. Las operaciones protegidas
-rechazarán accesos externos hasta implementar el adaptador de Identidad; jamás
-usar un `X-User-Id` enviado por un cliente como autenticación.
+- Pasos 1–6: dominio DDD, Flyway, persistencia y casos de uso.
+- Paso 7: API REST, DTOs, PATCH y controles de acceso;
+  **61 pruebas aprobadas en Windows**.
+- **Paso 8: Firebase Admin, integración con Identidad vía
+  `GET /api/v1/estudiantes/me`, validación del UUID interno, permisos
+  de propietario y pruebas de seguridad; pendiente de ejecución local.**
 
 ## Documentación
 
-- [REST, ejemplos y pruebas](docs/rest-api.md)
-- [Casos de uso](docs/use-cases.md)
-- [Persistencia JPA](docs/persistence.md)
-- [MySQL y Flyway](docs/database-setup.md)
+- [Paso 8: Firebase e Identidad](docs/auth-identity.md)
+- [Paso 7: API REST](docs/rest-api.md)
+- [Paso 6: Casos de uso](docs/use-cases.md)
+- [Paso 5: Persistencia JPA](docs/persistence.md)
+- [Paso 4: MySQL y Flyway](docs/database-setup.md)
 - [Modelo de dominio](docs/domain-model.md)
-- [Arquitectura DDD](docs/architecture.md)
 
-Para instalar/ejecutar: MySQL en `127.0.0.1:3308`, servicio en `localhost:8082`.
-No subir `.env`, contraseñas ni credenciales Firebase a Git.
+API local: `http://localhost:8082/api/v1/catalogo`.
+MySQL propio: `127.0.0.1:3308`.
 
-**Pendiente:** verificación Firebase/Identidad, contratos internos con Reservas,
-imágenes Cloudinary y documentación OpenAPI.
+**Seguridad:** la autenticación Firebase está desactivada hasta que
+`CATALOGO_FIREBASE_ENABLED=true` y las variables de Firebase e
+Identidad se configuren correctamente. Los endpoints del propietario
+permanecen protegidos y no aceptan IDs de usuario enviados por el cliente.
+No publicar `.env`, tokens o credenciales.
+
+Pendiente: confirmar con el equipo de Identidad una API interna
+entre servicios y sus credenciales; integración con Reservas y
+gestión de imágenes Cloudinary.
