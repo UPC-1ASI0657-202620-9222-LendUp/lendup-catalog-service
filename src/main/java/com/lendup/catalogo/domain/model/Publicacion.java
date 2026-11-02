@@ -123,7 +123,7 @@ public final class Publicacion {
     private void validarSinSolapamiento(Disponibilidad candidata, UUID idExcluido) {
         if (!DisponibilidadSpecification.sinSolapamiento(
                 disponibilidades.values(), candidata.periodo(), idExcluido)) {
-            throw new IllegalArgumentException("El intervalo se superpone con otra disponibilidad");
+            throw new DisponibilidadSuperpuestaException();
         }
     }
 }
