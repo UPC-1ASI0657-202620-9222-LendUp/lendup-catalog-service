@@ -14,6 +14,8 @@ import com.lendup.catalogo.application.port.in.ConsultarCategoriasUseCase;
 import com.lendup.catalogo.application.port.in.ConsultarPublicacionesUseCase;
 import com.lendup.catalogo.application.port.in.GestionarDisponibilidadUseCase;
 import com.lendup.catalogo.application.port.in.GestionarPublicacionesUseCase;
+import com.lendup.catalogo.application.port.out.FirebaseTokenVerifier;
+import com.lendup.catalogo.application.port.out.IdentidadUsuarioPort;
 import com.lendup.catalogo.config.CatalogoSecurityConfig;
 import com.lendup.catalogo.config.UsuarioActual;
 import com.lendup.catalogo.config.UsuarioAutenticado;
@@ -58,6 +60,8 @@ class CatalogoRestControllerTest {
     @MockitoBean private ConsultarPublicacionesUseCase consultas;
     @MockitoBean private ConsultarCategoriasUseCase categorias;
     @MockitoBean private GestionarDisponibilidadUseCase disponibilidad;
+    @MockitoBean private FirebaseTokenVerifier firebaseVerificador;
+    @MockitoBean private IdentidadUsuarioPort identidadUsuarios;
 
     private final UUID actor = UUID.randomUUID();
     private final UUID categoriaId = UUID.randomUUID();
@@ -307,5 +311,34 @@ class CatalogoRestControllerTest {
         mvc.perform(get("/api/v1/catalogo/publicaciones/{id}", pub.id()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.codigo").value("NO_ENCONTRADO"));
+    }
+
+    @Test void bearerValidadoResuelveUuidDelPropietarioEnSolicitudHttp() throws Exception {
+        var pub = publicacion();
+        UUID interno = UUID.randomUUID();
+        when(firebaseVerificador.verificar("token-real"))
+                .thenReturn(new FirebaseTokenVerifier.TokenVerificado("uid-firebase", true));
+        when(identidadUsuarios.resolverUsuario("uid-firebase", "token-real")).thenReturn(interno);
+        when(gestion.crear(any())).thenReturn(pub);
+        mvc.perform(post("/api/v1/catalogo/publicaciones")
+                        .header("Authorization", "Bearer token-real")
+                        .header("X-User-Id", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON).content(solicitud()))
+                .andExpect(status().isCreated());
+        ArgumentCaptor<GestionarPublicacionesUseCase.Crear> captor =
+                ArgumentCaptor.forClass(GestionarPublicacionesUseCase.Crear.class);
+        verify(gestion).crear(captor.capture());
+        assertEquals(interno, captor.getValue().actorUsuarioId());
+        verify(identidadUsuarios).resolverUsuario("uid-firebase", "token-real");
+    }
+
+    @Test void bearerInvalidoRechazaOperacionHttp() throws Exception {
+        when(firebaseVerificador.verificar("invalido"))
+                .thenThrow(new com.lendup.catalogo.application.exception.TokenFirebaseInvalidoException());
+        mvc.perform(post("/api/v1/catalogo/publicaciones")
+                        .header("Authorization", "Bearer invalido")
+                        .contentType(MediaType.APPLICATION_JSON).content(solicitud()))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(gestion);
     }
 }
