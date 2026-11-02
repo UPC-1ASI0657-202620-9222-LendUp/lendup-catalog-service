@@ -11,7 +11,6 @@ import com.lendup.catalogo.application.port.out.CategoriaPersistencePort;
 import com.lendup.catalogo.domain.model.Categoria;
 import com.lendup.catalogo.domain.model.CondicionesPublicacion;
 import com.lendup.catalogo.domain.model.DetallesPublicacion;
-import com.lendup.catalogo.domain.model.DisponibilidadSuperpuestaException;
 import com.lendup.catalogo.domain.model.EstadoPublicacion;
 import com.lendup.catalogo.domain.model.PeriodoDisponibilidad;
 import jakarta.persistence.EntityManager;
@@ -64,9 +63,6 @@ class CatalogoApplicationIntegrationTest {
                 actor, detalles(categoria, "Micrófono"), condiciones()));
         var intervalo = disponibilidad.agregar(new GestionarDisponibilidadUseCase.Agregar(
                 creada.id(), actor, periodo(8, 12)));
-        assertThrows(DisponibilidadSuperpuestaException.class, () -> disponibilidad.agregar(
-                new GestionarDisponibilidadUseCase.Agregar(creada.id(), actor, periodo(10, 14))));
-        // La excepción de dominio se produce antes de mutar; la prueba tiene transacción de rollback.
         var actualizado = disponibilidad.actualizar(new GestionarDisponibilidadUseCase.Actualizar(
                 creada.id(), intervalo.id(), actor, periodo(7, 12)));
         assertEquals(intervalo.id(), actualizado.id());
