@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -150,6 +151,10 @@ class CatalogoPersistenceIntegrationTest {
         var pub = publicacion(categoria(true));
         publicaciones.guardar(pub);
         var otro = Publicacion.nueva(pub.id(), UUID.randomUUID(), pub.detalles(), pub.condiciones());
-        assertThrows(IllegalArgumentException.class, () -> publicaciones.guardar(otro));
+        // @Repository traduce las excepciones del adaptador a la jerarquía DataAccessException.
+        var error = assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> publicaciones.guardar(otro));
+        assertInstanceOf(IllegalArgumentException.class, error.getCause());
+        assertEquals("No puede cambiarse la identidad ni el propietario", error.getCause().getMessage());
     }
 }
