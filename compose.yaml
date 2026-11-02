@@ -1,0 +1,25 @@
+# Entorno de desarrollo LOCAL para Catálogo.
+# Solo publica MySQL en 127.0.0.1:3308 (no expuesto a la red).
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: lendup_catalogo
+      MYSQL_USER: ${DB_USERNAME:-lendup_catalogo}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      TZ: UTC
+    ports:
+      - "127.0.0.1:3308:3306"
+    volumes:
+      - catalog-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --user=root --password=\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+volumes:
+  catalog-mysql-data:
