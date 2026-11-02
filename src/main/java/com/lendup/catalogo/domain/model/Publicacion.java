@@ -65,8 +65,10 @@ public final class Publicacion {
     }
 
     public void actualizar(DetallesPublicacion nuevosDetalles, CondicionesPublicacion nuevasCondiciones) {
-        detalles = ValidadorDominio.requerido(nuevosDetalles, "nuevosDetalles");
-        condiciones = ValidadorDominio.requerido(nuevasCondiciones, "nuevasCondiciones");
+        ValidadorDominio.requerido(nuevosDetalles, "nuevosDetalles");
+        ValidadorDominio.requerido(nuevasCondiciones, "nuevasCondiciones");
+        detalles = nuevosDetalles;
+        condiciones = nuevasCondiciones;
     }
 
     /**
