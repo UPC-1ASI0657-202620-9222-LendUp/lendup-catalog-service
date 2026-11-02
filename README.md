@@ -1,27 +1,23 @@
 # lendup-catalog-service
 
-Microservicio de Catálogo de LendUp, basado en Java 21 y Spring Boot 4.
+Microservicio de Catálogo de LendUp (Java 21 y Spring Boot 4).
 
 ## Estado del proyecto
 
-Estructura DDD y modelo de dominio de publicaciones/disponibilidades implementados.
-Se añadió el esquema inicial de **MySQL independiente** con Flyway y un
-entorno local de base de datos usando Docker Compose.
+- **DDD**: modelo de publicaciones, categorías, disponibilidad e imágenes.
+- **Base de datos independiente**: MySQL 8.4 con Flyway V1 y Docker Compose.
+- **Persistencia (paso 5)**: entidades JPA, repositorios Spring Data y
+  adaptadores transaccionales para Catálogo.
+- **Pendiente**: casos de uso REST, seguridad Firebase, integración con
+  Identidad y Reservas, y clientes Cloudinary.
 
-**Aún faltan:** adaptadores JPA, APIs REST, seguridad Firebase, integración gRPC con
-Identidad y contrato de snapshot con Reservas. Este repositorio no contiene un
-microservicio de Catálogo integrado ni desplegado todavía.
+## Desarrollo local y documentación
 
-## Desarrollo local
+- [Preparar MySQL y Flyway](docs/database-setup.md)
+- [Ejecutar pruebas de persistencia](docs/persistence.md)
+- [Modelo de dominio](docs/domain-model.md)
+- [Límites arquitectónicos](docs/architecture.md)
 
-- [Configurar MySQL y Flyway con Docker Desktop](docs/database-setup.md)
-- [Modelo de dominio y sus reglas](docs/domain-model.md)
-- [Arquitectura y límites del bounded context](docs/architecture.md)
+MySQL local: **127.0.0.1:3308**, Catálogo: **localhost:8082**.
 
-El puerto local propuesto para Catálogo es **8082** y el de MySQL es **3308**.
-Nunca subir `.env`, credenciales Firebase o secretos de integración a Git.
-
-## Tecnologías
-
-Java 21, Spring Boot 4, Maven, MySQL 8.4, Flyway; Firebase, Swagger/OpenAPI
-y gRPC quedan pendientes de implementación.
+Nunca subir el archivo `.env`, tokens Firebase u otras credenciales a Git.
