@@ -26,7 +26,7 @@ class CategoriaYCondicionesTest {
         assertThrows(IllegalArgumentException.class,
                 () -> condiciones(BigDecimal.ONE, new BigDecimal("-5"), "PEN"));
         assertThrows(IllegalArgumentException.class,
-                () -> condiciones(BigDecimal.ONE, null, "SOL"));
+                () -> condiciones(BigDecimal.ONE, null, "P1N"));
         assertThrows(IllegalArgumentException.class,
                 () -> condiciones(BigDecimal.ONE, null, "pe"));
     }
