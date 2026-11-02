@@ -30,3 +30,15 @@ management:
     web:
       exposure:
         include: health
+
+# Deshabilitada hasta configurar Firebase y un servidor Identidad que exponga
+# GET /api/v1/estudiantes/me (retorna usuario.id). Sin bypass de desarrollo.
+catalogo:
+  security:
+    firebase-enabled: ${CATALOGO_FIREBASE_ENABLED:false}
+
+firebase:
+  project-id: ${FIREBASE_PROJECT_ID:}
+
+identity:
+  base-url: ${IDENTITY_BASE_URL:}
