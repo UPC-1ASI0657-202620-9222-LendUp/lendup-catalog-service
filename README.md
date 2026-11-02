@@ -2,22 +2,25 @@
 
 Microservicio de Catálogo de LendUp (Java 21 y Spring Boot 4).
 
-## Estado del proyecto
+## Estado
 
-- **DDD**: modelo de publicaciones, categorías, disponibilidad e imágenes.
-- **Base de datos independiente**: MySQL 8.4 con Flyway V1 y Docker Compose.
-- **Persistencia (paso 5)**: entidades JPA, repositorios Spring Data y
-  adaptadores transaccionales para Catálogo.
-- **Pendiente**: casos de uso REST, seguridad Firebase, integración con
-  Identidad y Reservas, y clientes Cloudinary.
+1. Inicialización de Spring Boot y estructura DDD.
+2. Dominio: publicaciones, categorías, condiciones y disponibilidades.
+3. MySQL 8.4 independiente, Flyway V1 y Docker Compose.
+4. Entidades JPA, repositorios Spring Data y adaptadores.
+5. **Paso 6: casos de uso y servicios de aplicación** para gestionar publicaciones,
+   estados, categorías y disponibilidades; pruebas unitarias y de integración.
 
-## Desarrollo local y documentación
+**Aún faltan:** endpoints REST, seguridad Firebase, comunicación con Identidad y
+Reservas, y cliente Cloudinary.
 
-- [Preparar MySQL y Flyway](docs/database-setup.md)
-- [Ejecutar pruebas de persistencia](docs/persistence.md)
+## Guías
+
+- [Paso 4: MySQL y Flyway](docs/database-setup.md)
+- [Paso 5: Persistencia JPA](docs/persistence.md)
+- [Paso 6: Casos de uso, seguridad y pruebas](docs/use-cases.md)
 - [Modelo de dominio](docs/domain-model.md)
-- [Límites arquitectónicos](docs/architecture.md)
+- [Arquitectura DDD](docs/architecture.md)
 
-MySQL local: **127.0.0.1:3308**, Catálogo: **localhost:8082**.
-
-Nunca subir el archivo `.env`, tokens Firebase u otras credenciales a Git.
+Entorno local: MySQL `127.0.0.1:3308`, aplicación `localhost:8082`.
+No subir `.env`, contraseñas ni credenciales Firebase a Git.
