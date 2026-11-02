@@ -5,6 +5,7 @@ import com.lendup.catalogo.application.exception.IdentidadNoRegistradaException;
 import com.lendup.catalogo.application.exception.TokenFirebaseInvalidoException;
 import com.lendup.catalogo.application.port.out.IdentidadUsuarioPort;
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,24 +43,27 @@ public class IdentidadHttpClient implements IdentidadUsuarioPort {
         this.http = RestClient.builder().baseUrl(baseUrl).requestFactory(fabrica).build();
     }
 
-    public record IdentidadMe(Usuario usuario) {}
-    public record Usuario(UUID id) {}
-
     @Override
     public UUID resolverUsuario(String firebaseUid, String idToken) {
         if (firebaseUid == null || firebaseUid.isBlank() || idToken == null || idToken.isBlank()) {
             throw new TokenFirebaseInvalidoException();
         }
         try {
-            IdentidadMe respuesta = http.get()
+            // Map desacopla de los campos adicionales del usuario que publica Identidad.
+            Map<?, ?> respuesta = http.get()
                     .uri("/api/v1/estudiantes/me")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + idToken)
                     .retrieve()
-                    .body(IdentidadMe.class);
-            if (respuesta == null || respuesta.usuario() == null || respuesta.usuario().id() == null) {
+                    .body(Map.class);
+            if (respuesta == null || !(respuesta.get("usuario") instanceof Map<?, ?> usuario)
+                    || !(usuario.get("id") instanceof String id)) {
                 throw new IdentidadNoDisponibleException();
             }
-            return respuesta.usuario().id();
+            try {
+                return UUID.fromString(id);
+            } catch (IllegalArgumentException ex) {
+                throw new IdentidadNoDisponibleException();
+            }
         } catch (RestClientResponseException ex) {
             HttpStatusCode estado = ex.getStatusCode();
             if (estado.value() == 401) throw new TokenFirebaseInvalidoException();
