@@ -1,6 +1,12 @@
 package com.lendup.catalogo.config;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.lendup.catalogo.application.port.out.FirebaseTokenVerifier;
 import com.lendup.catalogo.application.port.out.IdentidadUsuarioPort;
 import org.springframework.beans.factory.ObjectProvider;
@@ -19,11 +25,27 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  */
 @Configuration
 public class CatalogoSecurityConfig {
+    @Value("${catalogo.security.cors-origins:http://localhost:5173}")
+    private String corsOrigins;
+
+    private CorsConfigurationSource corsConfigurationSource() {
+        var cors = new CorsConfiguration();
+        cors.setAllowedOrigins(Arrays.stream(corsOrigins.split(","))
+                .map(String::trim).filter(x -> !x.isBlank()).toList());
+        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cors.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        cors.setAllowCredentials(false);
+        var source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", cors);
+        return source;
+    }
+
     @Bean
     SecurityFilterChain catalogoFilterChain(HttpSecurity http,
             ObjectProvider<FirebaseTokenVerifier> verificadores,
             ObjectProvider<IdentidadUsuarioPort> identidades) throws Exception {
         return http
+                .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -35,6 +57,7 @@ public class CatalogoSecurityConfig {
                         .accessDeniedHandler((request, response, ex) ->
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN)))
                 .authorizeHttpRequests(a -> a
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/catalogo/categorias",

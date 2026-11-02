@@ -36,6 +36,7 @@ management:
 catalogo:
   security:
     firebase-enabled: ${CATALOGO_FIREBASE_ENABLED:false}
+    cors-origins: ${CORS_ORIGINS:http://localhost:5173}
 
 firebase:
   project-id: ${FIREBASE_PROJECT_ID:}

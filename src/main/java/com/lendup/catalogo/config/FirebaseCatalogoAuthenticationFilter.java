@@ -35,6 +35,7 @@ public class FirebaseCatalogoAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
         if (!"GET".equalsIgnoreCase(request.getMethod())) return false;
         String ruta = request.getServletPath();
         return ruta.equals("/actuator/health") || ruta.startsWith("/actuator/health/")
