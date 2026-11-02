@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -35,11 +36,14 @@ public class IdentidadHttpClient implements IdentidadUsuarioPort {
                 && ("localhost".equalsIgnoreCase(uri.getHost()) || "127.0.0.1".equals(uri.getHost())))) {
             throw new IllegalStateException("Identidad requiere HTTPS; HTTP solo se permite en localhost");
         }
-        this.http = RestClient.builder().baseUrl(baseUrl).build();
+        var fabrica = new SimpleClientHttpRequestFactory();
+        fabrica.setConnectTimeout(3000);
+        fabrica.setReadTimeout(4000);
+        this.http = RestClient.builder().baseUrl(baseUrl).requestFactory(fabrica).build();
     }
 
-    record IdentidadMe(Usuario usuario) {}
-    record Usuario(UUID id) {}
+    public record IdentidadMe(Usuario usuario) {}
+    public record Usuario(UUID id) {}
 
     @Override
     public UUID resolverUsuario(String firebaseUid, String idToken) {
