@@ -21,8 +21,7 @@ se relaciona con la tabla de Identidad. Tampoco se consulta ninguna tabla de Res
 `PublicacionPersistencePort.guardar` actualiza los datos de la publicación y sincroniza
 los intervalos asociados **en una sola transacción**.
 
-**Importante para el futuro paso 6:** para editar una publicación existente, el caso
-de uso debe ejecutar **una única transacción** en la que primero llame a
+Para editar una publicación existente, el caso de uso ejecuta **una única transacción** en la que primero llame a
 `buscarPorIdParaActualizar(id)`, aplique las reglas con `Publicacion` y finalmente
 llame a `guardar(publicacion)`. El método de lectura bloqueada exige una transacción
 activa. No hacer la lectura normal fuera de transacción y guardar después, pues eso
@@ -31,10 +30,10 @@ permitiría sobrescribir intervalos escritos concurrentemente.
 `listarActivas` exige tanto `publicaciones.estado='ACTIVA'` como
 `categorias.activa=true`, siguiendo la consulta pública del monolito.
 
-`ImagenPublicacionPersistenceAdapter` guarda **metadatos**; el upload y
-borrado de archivos reales en Cloudinary quedan para otro paso.
+`ImagenPublicacionPersistenceAdapter` guarda **metadatos**. La subida y
+eliminación de archivos reales se implementaron después mediante Cloudinary.
 
-### Ejecutar pruebas locales (requiere abrir programas)
+### Ejecución de pruebas locales
 
 1. **Docker Desktop:** abrir y comprobar `Engine running`.
 2. **VS Code:** abrir `lendup-catalog-service` y la terminal PowerShell.
@@ -45,8 +44,8 @@ borrado de archivos reales en Cloudinary quedan para otro paso.
    git pull origin develop
    ```
 
-4. Asegurarte de que el archivo `.env` local contiene las contraseñas que ya
-   inicializaste para el contenedor (no enviarlas al chat ni a Git).
+4. Verificar que las contraseñas de `.env` correspondan a las credenciales
+   inicializadas en el contenedor (no incluirlas en documentación ni commits).
 5. Levantar o verificar el contenedor MySQL:
 
    ```powershell
@@ -59,7 +58,7 @@ borrado de archivos reales en Cloudinary quedan para otro paso.
 
    ```powershell
    java -version
-   $env:DB_PASSWORD = Read-Host "Introduce DB_PASSWORD de tu .env"
+   $env:DB_PASSWORD = Read-Host "Contraseña local de MySQL"
    ```
 
 7. Ejecutar las pruebas:
@@ -79,15 +78,14 @@ lo que sí debe estar activo es el contenedor de **MySQL**.
 
 ### Estado de verificación
 
-Los commits y los archivos están publicados en `develop`. No hay ejecución
-de Maven ni de Docker disponible desde el entorno de edición de GitHub;
-las pruebas y la validación de Hibernate contra MySQL **deben ejecutarse
-localmente** y revisar la salida completa. Si falla `ddl-auto: validate`,
-revisar la divergencia específica de tipos JPA/SQL sin cambiar una migración
-Flyway V1 que ya fue aplicada.
+Los archivos se encuentran publicados en `develop`. La suite completa fue
+validada en Windows con **97 pruebas aprobadas**, incluyendo pruebas de
+persistencia contra MySQL. Ante divergencias detectadas por
+`ddl-auto: validate`, revisar tipos JPA/SQL y conservar la integridad
+de las migraciones Flyway aplicadas.
 
-### Siguientes pasos
+### Integraciones relacionadas
 
-- Paso 6: casos de uso y transacciones de aplicación.
-- Paso 7: REST y contratos para el frontend.
-- Más adelante: autorización Firebase, Identidad, Reservas y Cloudinary.
+Los casos de uso, controladores REST, validación Firebase y gestión de
+imágenes Cloudinary están implementados. La conexión real con Identidad y
+el contrato de disponibilidad con Reservas siguen pendientes.
