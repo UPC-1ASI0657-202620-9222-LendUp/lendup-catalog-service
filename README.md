@@ -9,7 +9,7 @@ Microservicio de Catálogo de LendUp (Java 21, Spring Boot 4, MySQL 8.4).
   **61 pruebas aprobadas en Windows**.
 - **Paso 8: Firebase Admin, integración con Identidad vía
   `GET /api/v1/estudiantes/me`, validación del UUID interno, permisos
-  de propietario y pruebas de seguridad; **82 pruebas aprobadas en Windows**.**
+  de propietario y pruebas de seguridad; 82 pruebas aprobadas en Windows.**
 
 - **Paso 9: endpoints Cloudinary y gestión de fotos; pendiente de pruebas locales.**
 

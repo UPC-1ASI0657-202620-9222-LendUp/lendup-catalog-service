@@ -355,4 +355,44 @@ class CatalogoRestControllerTest {
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isForbidden());
     }
+
+    @Test void imagenesPublicasSinAutenticacion() throws Exception {
+        var pub=publicacion();
+        when(gestionImagenes.listarPublicas(pub.id())).thenReturn(List.of(
+                new com.lendup.catalogo.domain.model.ImagenPublicacion(UUID.randomUUID(),
+                        pub.id(),"cloud/uno","https://res.cloudinary.com/cat/a.jpg",0)));
+        mvc.perform(get("/api/v1/catalogo/publicaciones/{id}/imagenes",pub.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].url").value("https://res.cloudinary.com/cat/a.jpg"))
+                .andExpect(jsonPath("$[0].orden").value(0));
+    }
+
+    @Test void subirImagenSinIdentidadNoAutorizado() throws Exception {
+        var pub=publicacion();
+        var archivo=new org.springframework.mock.web.MockMultipartFile(
+                "file","foto.jpg","image/jpeg",new byte[]{(byte)0xFF,(byte)0xD8,(byte)0xFF});
+        mvc.perform(multipart("/api/v1/catalogo/publicaciones/{id}/imagenes",pub.id())
+                        .file(archivo))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(gestionImagenes);
+    }
+
+    @Test void subirYEliminarImagenVerificaUuidDelActor() throws Exception {
+        var pub=publicacion();
+        var imagen=new com.lendup.catalogo.domain.model.ImagenPublicacion(
+                UUID.randomUUID(),pub.id(),"cloud/uno","https://res.cloudinary.com/cat/a.jpg",0);
+        var archivo=new org.springframework.mock.web.MockMultipartFile(
+                "file","foto.jpg","image/jpeg",new byte[]{(byte)0xFF,(byte)0xD8,(byte)0xFF});
+        when(gestionImagenes.subir(eq(pub.id()),eq(actor),any(byte[].class),eq("image/jpeg")))
+                .thenReturn(imagen);
+        mvc.perform(multipart("/api/v1/catalogo/publicaciones/{id}/imagenes",pub.id())
+                        .file(archivo).with(autenticado(actor)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.url").value(imagen.url()));
+        mvc.perform(delete("/api/v1/catalogo/publicaciones/{id}/imagenes/{imagenId}",
+                        pub.id(),imagen.id()).with(autenticado(actor)))
+                .andExpect(status().isNoContent());
+        verify(gestionImagenes).eliminar(pub.id(),imagen.id(),actor);
+    }
+
 }
