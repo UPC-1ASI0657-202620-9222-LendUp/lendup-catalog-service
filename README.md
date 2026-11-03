@@ -32,6 +32,5 @@ Identidad se configuren correctamente. Los endpoints del propietario
 permanecen protegidos y no aceptan IDs de usuario enviados por el cliente.
 No publicar `.env`, tokens o credenciales.
 
-Pendiente: confirmar con el equipo de Identidad una API interna
-entre servicios y sus credenciales; integración con Reservas y
-gestión de imágenes Cloudinary.
+Pendiente: probar en vivo la subida/eliminación con Cloudinary cuando Identidad esté
+operativo, acordar los contratos de Reservas y validar la integración completa.
