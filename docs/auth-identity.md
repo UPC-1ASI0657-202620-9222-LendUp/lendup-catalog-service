@@ -64,7 +64,7 @@ Para **activar** la autenticación hay que preparar:
 |---|---|
 | `CATALOGO_FIREBASE_ENABLED=true` | Instancia y activa los adaptadores Firebase/Identidad |
 | `FIREBASE_PROJECT_ID` | ID exacto del proyecto Firebase |
-| `IDENTITY_BASE_URL` | Dirección de Identidad sin `/api/v1`, por ejemplo `http://localhost:8080` en la misma máquina |
+| `IDENTITY_BASE_URL` | Dirección de Identidad sin `/api/v1`, por ejemplo `http://localhost:8080` en desarrollo local |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Ruta local fuera del repositorio a una cuenta de servicio válida, o usar Google Application Default Credentials |
 | `FIREBASE_AUTH_EMULATOR_HOST` | **Opcional**: host:puerto del emulador de Authentication en desarrollo, como `127.0.0.1:9099` |
 | `CORS_ORIGINS` | Orígenes exactos separados por comas, por defecto `http://localhost:5173` |
@@ -76,14 +76,15 @@ no están disponibles.
 
 En redes remotas se exige HTTPS para `IDENTITY_BASE_URL`;
 HTTP se permite solo con los hosts `localhost` o `127.0.0.1`
-para pruebas en la misma máquina. Las llamadas al servicio de Identidad
+para pruebas locales. Las llamadas al servicio de Identidad
 utilizan límites de conexión (3 s) y lectura (4 s). 
 Para un contenedor Docker donde `localhost` no apunte a Identidad,
 usar una URL HTTPS alcanzable y autorizada en la red del despliegue.
 
-**Importante:** el emulador, la aplicación de Identidad y su base de datos
-se configuran aparte; este paso no los instala ni copia sus credenciales.
-No habilites el filtro hasta tenerlos preparados.
+**Dependencias externas:** el emulador, la aplicación de Identidad y su base de datos
+se configuran de manera independiente. La integración de Catálogo no instala
+estos componentes ni incluye sus credenciales. El filtro debe permanecer
+desactivado hasta que estén disponibles.
 
 ## Semántica de errores
 
@@ -113,12 +114,12 @@ sin sesión sólo desde orígenes autorizados.
 4. `CatalogoRestControllerTest`:
    dos pruebas HTTP de autenticación Bearer y una de preflight CORS.
 
-**Total esperado:** 82 pruebas (61 previas y 21 nuevas).
-La ejecución local del nuevo paso todavía está pendiente.
+**Verificación de la etapa:** 82 pruebas aprobadas (61 previas y 21 nuevas).
+La suite completa del proyecto fue validada posteriormente con **97 pruebas aprobadas**.
 
 ## Windows / VS Code
 
-En la misma terminal donde ya funcionaban las pruebas de Java 21:
+Desde una terminal con Java 21 y Maven configurados:
 
 ```powershell
 git switch develop
@@ -126,17 +127,18 @@ git pull origin develop
 docker compose ps
 ```
 
-En una terminal nueva, antes de ejecutar las pruebas, configura Java 21,
-Maven y la contraseña `DB_PASSWORD` según
-[docs/rest-api.md](rest-api.md#pruebas-automatizadas). No hagas público el valor
-de la contraseña.
+Para ejecutar pruebas desde una terminal nueva, establecer Java 21, Maven
+y la variable `DB_PASSWORD` según
+[docs/rest-api.md](rest-api.md#pruebas-automatizadas). Las contraseñas no
+se registran en documentación ni en commits.
 
-El comando de Maven para tu equipo, que evita los fallos de `.cmd`, es:
+Comando alternativo en instalaciones donde los scripts `.cmd` de Maven fallen:
 
 ```powershell
 & "$env:JAVA_HOME\bin\java.exe" "-Dmaven.multiModuleProjectDirectory=$((Get-Location).Path)" "-Dmaven.home=$mavenHome" "-Dclassworlds.conf=$mavenHome\bin\m2.conf" -cp "$mavenHome\boot\*" org.codehaus.plexus.classworlds.launcher.Launcher test
 ```
 
-Resultado esperado: `Tests run: 82, Failures: 0, Errors: 0`
-y `BUILD SUCCESS`. Si algo falla, comparte el bloque `[ERROR]`
-con el nombre de la prueba, **sin tokens ni credenciales**.
+Registro de esta etapa: `Tests run: 82, Failures: 0, Errors: 0`,
+`BUILD SUCCESS`. En la versión actual, la suite reúne 97 pruebas.
+Para diagnosticar errores, consultar los bloques `[ERROR]` y los informes
+Surefire, sin copiar tokens ni credenciales.
