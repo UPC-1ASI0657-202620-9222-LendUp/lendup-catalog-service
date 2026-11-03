@@ -11,7 +11,7 @@ if ($LASTEXITCODE -ne 0 -or "$containerDatabase".Trim() -ne $Database) { throw '
 # including an existing Flyway history. No baseline-on-migrate or destructive DDL.
 $count = docker exec $MySqlContainer sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()"' 2>$null
 if ($LASTEXITCODE -ne 0 -or "$count".Trim() -ne '0') { throw 'Database is not empty or cannot be inspected; no migration executed' }
-$schemaPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../src/main/resources/db/migration'))
+$schemaPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../src/LendUp.Catalogo.Infrastructure/Database/Migrations'))
 if (-not (Test-Path -LiteralPath (Join-Path $schemaPath 'V1__create_catalog_schema.sql'))) { throw 'Flyway V1 not found' }
 $env:FLYWAY_URL="jdbc:mysql://127.0.0.1:3306/${Database}?allowPublicKeyRetrieval=true&useSSL=false"
 $env:FLYWAY_USER=$env:DB_USERNAME

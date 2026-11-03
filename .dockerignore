@@ -4,7 +4,6 @@
 .env
 .env.*
 .secrets
-target
 work
 TestResults
 **/*service-account*.json
