@@ -33,6 +33,7 @@ public sealed class Fixture : IAsyncLifetime
         await Task.WhenAll(Mysql.StartAsync(),Redis.StartAsync());
         await using var conn = new MySqlConnection(Mysql.GetConnectionString()); await conn.OpenAsync();
         await new MySqlCommand(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"V1.sql")),conn).ExecuteNonQueryAsync();
+        await new MySqlCommand(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"V2.sql")),conn).ExecuteNonQueryAsync();
         var insert = new MySqlCommand("INSERT INTO categorias(id,codigo,nombre,activa) VALUES(@id,'TEC','Tecnología',true)",conn);
         insert.Parameters.AddWithValue("@id",Categoria.ToString()); await insert.ExecuteNonQueryAsync();
         // A Java-compatible preexisting row, inserted via raw SQL rather than EF.
