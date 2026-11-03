@@ -12,12 +12,11 @@ Microservicio de Catálogo de LendUp (Java 21, Spring Boot 4, MySQL 8.4).
   de propietario y pruebas de seguridad; 82 pruebas aprobadas en Windows.**
 
 - **Paso 9: Cloudinary e imágenes; 96 pruebas aprobadas y arranque local exitoso.**
-- **Paso 10: Swagger/OpenAPI interactivo; pendiente de validación local.**
+- **Paso 10: Swagger/OpenAPI; 97 pruebas aprobadas en Windows, interfaz Swagger validada y consulta pública HTTP 200 confirmada.**
 
 ## Documentación
 
 - [Paso 10: OpenAPI y Swagger](docs/openapi.md)
-
 - [Paso 9: Cloudinary](docs/cloudinary.md)
 - [Paso 8: Firebase e Identidad](docs/auth-identity.md)
 - [Paso 7: API REST](docs/rest-api.md)
@@ -35,5 +34,6 @@ Identidad se configuren correctamente. Los endpoints del propietario
 permanecen protegidos y no aceptan IDs de usuario enviados por el cliente.
 No publicar `.env`, tokens o credenciales.
 
-Pendiente: probar en vivo la subida/eliminación con Cloudinary cuando Identidad esté
-operativo, acordar los contratos de Reservas y validar la integración completa.
+Pendiente de integración: pruebas reales de autenticación con Identidad,
+subida y eliminación de imágenes Cloudinary mediante solicitudes autorizadas,
+contrato con Reservas y validación de la comunicación entre microservicios.
