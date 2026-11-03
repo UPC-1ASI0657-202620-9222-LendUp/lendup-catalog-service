@@ -3,6 +3,9 @@ package com.lendup.catalogo.interfaces.rest;
 import com.lendup.catalogo.application.port.in.GestionarImagenesUseCase;
 import com.lendup.catalogo.config.UsuarioActual;
 import com.lendup.catalogo.interfaces.rest.dto.ImagenPublicacionResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
+@Tag(name = "Imágenes")
 @RequestMapping("/api/v1/catalogo/publicaciones/{publicacionId}/imagenes")
 public class ImagenPublicacionController {
     private final GestionarImagenesUseCase gestion;
@@ -33,6 +37,7 @@ public class ImagenPublicacionController {
                 .map(ImagenPublicacionResponse::deDominio).toList();
     }
 
+    @Operation(summary = "Subir fotografía", security = @SecurityRequirement(name = "firebaseBearer"))
     @PostMapping(consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImagenPublicacionResponse> subir(@PathVariable UUID publicacionId,
             @RequestPart("file") MultipartFile archivo) throws IOException {
@@ -43,6 +48,7 @@ public class ImagenPublicacionController {
                 .body(ImagenPublicacionResponse.deDominio(img));
     }
 
+    @Operation(summary = "Eliminar fotografía", security = @SecurityRequirement(name = "firebaseBearer"))
     @DeleteMapping("/{imagenId}")
     public ResponseEntity<Void> eliminar(@PathVariable UUID publicacionId,
             @PathVariable UUID imagenId) {
