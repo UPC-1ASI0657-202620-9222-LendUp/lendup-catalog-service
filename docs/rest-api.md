@@ -1,5 +1,3 @@
-> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
-
 # API REST y DTOs de Catálogo
 
 ## Base y versión
@@ -21,6 +19,9 @@ Puerto HTTP local: `8082`. Base de rutas: `/api/v1/catalogo`.
 | POST | `/publicaciones/{publicacionId}/disponibilidades` | Propietario autenticado | Agrega intervalo (201 + Location) |
 | PUT | `/publicaciones/{publicacionId}/disponibilidades/{id}` | Propietario autenticado | Cambia intervalo (200) |
 | DELETE | `/publicaciones/{publicacionId}/disponibilidades/{id}` | Propietario autenticado | Elimina intervalo (204) |
+| GET | /publicaciones/{publicacionId}/imagenes | Público si visible | 200 |
+| POST | /publicaciones/{publicacionId}/imagenes | Propietario | 201 + Location, multipart file |
+| DELETE | /publicaciones/{publicacionId}/imagenes/{imagenId} | Propietario | 204 |
 
 **Nota:** los intervalos ofrecidos no descuentan reservas confirmadas. Los métodos
 de disponibilidad son sólo para propietarios; el contrato interno de
@@ -38,7 +39,7 @@ estén configurados y disponibles.
 - Las consultas públicas pueden realizarse sin autenticación.
 - Las operaciones protegidas requieren identidad autenticada; sin token
   devuelven **401**. No se permite suplantación mediante cabeceras.
-- Las pruebas MockMvc simulan un principal tipado para verificar permisos.
+- Las pruebas HTTP simulan los puertos de autenticación para verificar permisos.
 - Un principal incompatible no concede acceso a datos del propietario.
 - Se usa una API sin sesiones, sin autenticación Basic y con CSRF deshabilitado.
 - Los casos de uso comprueban la propiedad antes de modificar publicaciones.
@@ -121,61 +122,10 @@ Estructura uniforme:
   o detalle público no visible.
 - **409** `DISPONIBILIDAD_SUPERPUESTA`: rango solapado.
 
-La respuesta 401/403 emitida directamente por Spring Security puede usar la
+La respuesta 401 emitida por autenticación puede usar la
 respuesta estándar del servidor, no el DTO `ApiError`.
 
-## Pruebas automatizadas
+## Búsqueda
 
-`CatalogoRestControllerTest` es una prueba de *slice* MVC `@WebMvcTest`,
-que ejecuta rutas, validación, serialización Jackson 3, filtros de seguridad
-y mapeo de excepciones. Los puertos son mocks; no necesita MySQL para ese test.
-El resto de la suite cubre dominio, aplicación, persistencia e integraciones
-con la configuración de MySQL del proyecto.
-
-### Ejecución local (Windows PowerShell)
-
-En la raíz de `lendup-catalog-service`:
-
-```powershell
-git switch develop
-git pull origin develop
-docker compose ps
-```
-
-Si MySQL no está activo: `docker compose up -d mysql`.
-En una terminal nueva deben establecerse las variables locales:
-
-```powershell
-$jdk21 = Get-ChildItem "C:\Program Files\Microsoft" -Directory -Filter "jdk-21*" | Select-Object -First 1 -ExpandProperty FullName
-$env:JAVA_HOME = $jdk21
-$env:Path = "$jdk21\bin;$env:Path"
-$mvn = Get-ChildItem "$HOME\.m2\wrapper\dists" -Recurse -Filter mvn.cmd -File | Select-Object -First 1
-$mavenHome = Split-Path (Split-Path $mvn.FullName -Parent) -Parent
-$env:DB_PASSWORD = Read-Host "Contraseña de Catálogo"
-```
-
-Alternativa para instalaciones donde el script Maven `.cmd` falle:
-
-```powershell
-& "$env:JAVA_HOME\bin\java.exe" "-Dmaven.multiModuleProjectDirectory=$((Get-Location).Path)" "-Dmaven.home=$mavenHome" "-Dclassworlds.conf=$mavenHome\bin\m2.conf" -cp "$mavenHome\boot\*" org.codehaus.plexus.classworlds.launcher.Launcher test
-```
-
-La suite automatizada de referencia reúne **97 pruebas aprobadas**, con
-`Failures: 0`, `Errors: 0` y `BUILD SUCCESS`.
-
-Para probar un endpoint público manualmente, iniciar Spring Boot con
-`spring-boot:run` y consultar desde otra terminal:
-
-```powershell
-Invoke-RestMethod http://localhost:8082/api/v1/catalogo/categorias
-```
-
-Es normal recibir `[]` si no hay categorías activas aún.
-Las operaciones protegidas requieren Firebase e Identidad configurados.
-
-## Integraciones posteriores
-
-Firebase, el cliente HTTP de Identidad, Cloudinary y OpenAPI/Swagger están
-implementados. La comunicación con Identidad se ha validado en desarrollo local.
-Quedan pendientes la validación extremo a extremo de archivos autenticados y el contrato entre Catálogo y Reservas.
+Combinar nombre, categoriaId, campus, universidad, desde y hasta en GET /publicaciones. El intervalo debe estar cubierto por una sola disponibilidad. Los errores de dependencias devuelven 503.
 

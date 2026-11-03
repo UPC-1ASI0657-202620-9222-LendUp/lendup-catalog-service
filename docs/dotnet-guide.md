@@ -2,7 +2,7 @@
 
 ## Estado y arquitectura
 
-La solución `LendUp.Catalogo.sln` contiene cuatro capas y cuatro proyectos de prueba. El código Java se conserva como referencia hasta completar la comparación de comportamientos. Consultar `migration-plan.md` y `migration-validation.md` antes del cambio de runtime.
+La solución LendUp.Catalogo.sln contiene cuatro capas y cuatro proyectos de prueba.
 
 `Domain` contiene Publicacion, Categoria, DetallesPublicacion, CondicionesPublicacion, EstadoPublicacion, Disponibilidad, PeriodoDisponibilidad, DisponibilidadSpecification y reglas de imagen. No referencia ASP.NET, EF ni Redis. `Application` define puertos y casos de uso; comprueba propietario y orquesta cambios. `Infrastructure` implementa persistencia, caché y adaptadores externos. `Api` compone DI, autenticación, controladores y contratos HTTP.
 
@@ -33,7 +33,7 @@ dotnet test LendUp.Catalogo.sln --configuration Release --no-build
 dotnet run --project src/LendUp.Catalogo.Api --no-launch-profile
 ```
 
-Una base nueva debe inicializarse explícitamente antes de ejecutar el servicio; levantar MySQL no crea las tablas. Una base existente con Flyway V1 no requiere DDL. No iniciar Java y .NET como escritores simultáneos sobre datos personales.
+Una base nueva debe inicializarse explícitamente antes de ejecutar el servicio; levantar MySQL no crea las tablas. Una base existente con Flyway V1 no requiere DDL.
 
 Puerto HTTP 8082. Desde el host MySQL usa 127.0.0.1:3308 y Redis 127.0.0.1:6379. Desde Compose los nombres son `mysql:3306` y `redis:6379`; localhost dentro de un contenedor es el propio contenedor. `docker compose --profile dotnet up -d --build api` usa el Dockerfile de .NET, usuario de runtime sin privilegios y autenticación deshabilitada de forma segura. Para habilitar integraciones, añadir variables y un montaje de credenciales de sólo lectura mediante un override privado, fuera de Git.
 
@@ -55,7 +55,7 @@ Base /api/v1/catalogo. Se mantienen los 16 métodos/rutas de `rest-api.md` y `cl
 
 PUT reemplaza detalles y condiciones completos. PATCH fusiona recursivamente bajo bloqueo SQL, rechaza campos desconocidos, id, propietario y estado; campos omitidos intactos. Null elimina sólo valores opcionales; null obligatorio retorna 400. Cambiar estado usa el endpoint dedicado.
 
-Disponibilidad acepta fechas locales ISO sin Z ni offset. Periodos semiabiertos [desde,hasta), adyacencia permitida, solapamiento rechazado, actualización excluye su ID. La búsqueda requiere cobertura por un mismo intervalo; no fusiona adyacentes ni consulta reservas. Timestamps técnicos se escriben en UTC en DATETIME(6), como Java.
+Disponibilidad acepta fechas locales ISO sin Z ni offset. Periodos semiabiertos [desde,hasta), adyacencia permitida, solapamiento rechazado, actualización excluye su ID. La búsqueda requiere cobertura por un mismo intervalo; no fusiona adyacentes ni consulta reservas. Timestamps técnicos se escriben en UTC en DATETIME(6).
 
 ```powershell
 $base = 'http://localhost:8082/api/v1/catalogo'
@@ -75,7 +75,7 @@ Swagger: /swagger-ui/index.html. OpenAPI: /v3/api-docs (alias redirige a /v3/api
 
 El contexto mapea CHAR(36) como strings en persistencia y Guid en dominio; DECIMAL(12,2) dinero, DECIMAL(9,6) coordenadas, DATETIME(6), textos y nombres V1. La conexión usa OldGuids=true para impedir la interpretación automática de CHAR(36) como Guid por MySql.Data; todos los UUID están mapeados explícitamente como texto de longitud fija y no se usan columnas binarias. No hay FK a Identidad/Reservas. No hay EnsureCreated, EnsureDeleted ni migraciones automáticas.
 
-Para una base vacía ejecutar Flyway 11.14.1 (la misma versión de la referencia Java) con `src/main/resources/db/migration` como ubicación y credenciales en variables/configuración privada. V1 permanece intacta. El helper exige inspección vacía y rechaza cualquier tabla existente:
+Para una base vacía ejecutar Flyway 11.14.1 con `src/LendUp.Catalogo.Infrastructure/Database/Migrations` como ubicación y credenciales en variables/configuración privada. V1 permanece intacta. El helper exige inspección vacía y rechaza cualquier tabla existente:
 
 ```powershell
 $mysqlContainer = docker compose ps -q mysql
@@ -84,7 +84,7 @@ $mysqlContainer = docker compose ps -q mysql
 
 Ejecutarlo sólo para una instalación nueva, tras cargar DB_USERNAME/DB_PASSWORD; el contenedor Flyway comparte la red del MySQL seleccionado y recibe secretos únicamente por entorno. Para una base existente conservar flyway_schema_history y comprobar columnas/índices contra V1 antes del despliegue. No aplicar V1 manualmente sobre tablas existentes. Las pruebas ejecutan V1 únicamente dentro de una base efímera nueva.
 
-Antes de cualquier cambio futuro: respaldo mysqldump --single-transaction con archivo de opciones privado (sin contraseña en argumentos), restauración de ensayo en base separada, migración incremental revisada y plan de reversión. Esta implementación no modifica el esquema. Para rollback detener .NET, volver al commit Java y reiniciar Java con las mismas variables; revisar que no haya dos escritores. Nunca ejecutar docker compose down -v ni eliminar volúmenes de datos.
+Antes de cualquier cambio futuro: respaldo mysqldump --single-transaction con archivo de opciones privado (sin contraseña en argumentos), restauración de ensayo en base separada, migración incremental revisada y plan de reversión. Esta implementación no modifica el esquema. Para rollback detener el servicio y desplegar la versión anterior compatible con el esquema, con un único escritor. Nunca ejecutar docker compose down -v ni eliminar volúmenes de datos.
 
 Modificar una publicación adquiere SELECT ... FOR UPDATE parametrizado, reconstruye agregado, autoriza y valida dentro de la misma transacción READ COMMITTED, guarda y confirma. El bloqueo padre serializa disponibilidad e imágenes entre instancias; no hay lock C# como garantía de integridad.
 
@@ -94,7 +94,7 @@ Cache-aside mediante IDistributedCache y StackExchange.Redis; prefijo lendup:cat
 
 La generación de caché se deriva de metadatos persistidos: todos los IDs y actualizado_en de publicaciones, y categorías con su visibilidad/nombre/código. Cada mutación actualiza actualizado_en en el mismo commit, incluidas disponibilidad e imágenes. Así una caída de Redis durante una escritura no pierde invalidaciones: la siguiente lectura usa otra generación, sin KEYS ni borrado global. Publicaciones e imágenes comprueban además visibilidad SQL. Una consulta iniciada antes de un commit puede completar con su snapshot anterior; una consulta posterior observa la generación nueva.
 
-Esta estrategia conserva las cuatro tablas sin introducir una quinta tabla de generaciones. Tiene coste O(n) de metadatos por lectura pública y debe evaluarse con datos representativos antes de producción. Cambios externos directos a publicaciones deben actualizar actualizado_en; no escribir Java y .NET a la vez. Para grandes catálogos considerar una migración incremental de generación/outbox transaccional. No se afirma una mejora de latencia sin mediciones.
+Esta estrategia conserva las cuatro tablas sin introducir una quinta tabla de generaciones. Tiene coste O(n) de metadatos por lectura pública y debe evaluarse con datos representativos antes de producción. Cambios externos directos a publicaciones deben actualizar actualizado_en. Para grandes catálogos considerar una migración incremental de generación/outbox transaccional. No se afirma una mejora de latencia sin mediciones.
 
 Métricas Meter `LendUp.Catalogo.Cache`: catalogo.cache.hit, miss, error y duration (ms). Redis caído provoca consulta MySQL y registro sanitizado. Las entradas de generaciones antiguas expiran por TTL. Ver `performance.md` para carga sintética y limitaciones.
 
@@ -104,7 +104,6 @@ Si falla guardar o confirmar tras una subida, se intenta eliminar el recurso rem
 
 ## Pruebas y CI
 
-Las cuatro suites cubren dominio, aplicación, contratos y HTTP/persistencia con Testcontainers. Docker debe estar disponible. Contenedores MySQL 8.4/Redis se crean con puertos efímeros y se eliminan al terminar; no usan Compose ni volúmenes existentes. WebApplicationFactory reemplaza Firebase, Identidad y Cloudinary sólo en pruebas. `dotnet test` ejecuta la integración sin opt-in silencioso. GitHub Actions restaura, compila Release y ejecuta pruebas en Ubuntu con Docker. Resultados reales y pendientes se registran en migration-validation.md.
+Las cuatro suites cubren dominio, aplicación, contratos y HTTP/persistencia con Testcontainers. Docker debe estar disponible. Contenedores MySQL 8.4/Redis se crean con puertos efímeros y se eliminan al terminar; no usan Compose ni volúmenes existentes. WebApplicationFactory reemplaza Firebase, Identidad y Cloudinary sólo en pruebas. `dotnet test` ejecuta la integración sin opt-in silencioso. GitHub Actions restaura, compila Release y ejecuta pruebas en Ubuntu con Docker. Las comprobaciones de fechas se detallan en datetime-semantics.md.
 
 La prueba del helper confirmó Flyway V1 e historia en una base vacía, y rechazo de la segunda inicialización. Flyway 11.14.1 emite un aviso de que su última versión MySQL verificada es 8.1; la ejecución real con 8.4 fue correcta. No se usa ese aviso como prueba de soporte formal del proveedor EF, que se valida por separado con MySQL 8.4.
-
