@@ -59,6 +59,8 @@ public class CatalogoSecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v3/api-docs", "/v3/api-docs/**",
+                                "/v3/api-docs.yaml", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/catalogo/categorias",
                                 "/api/v1/catalogo/categorias/{id}",
