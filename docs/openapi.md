@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # OpenAPI y Swagger en Catálogo
 
 La documentación de la API utiliza `springdoc-openapi-starter-webmvc-ui:3.0.3`, compatible
@@ -32,3 +34,4 @@ $doc.paths.PSObject.Properties.Name
 El botón Try it out permite consultar endpoints públicos;
 las operaciones protegidas rechazarán peticiones sin un token válido
 y el perfil correspondiente en Identidad.
+

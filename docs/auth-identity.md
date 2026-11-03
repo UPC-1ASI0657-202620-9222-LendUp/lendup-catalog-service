@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # Autenticación Firebase e integración con Identidad
 
 ## Contrato HTTP de Identidad
@@ -123,3 +125,4 @@ Comando alternativo en instalaciones donde los scripts `.cmd` de Maven fallen:
 
 Para diagnosticar errores, consultar los bloques `[ERROR]` y los informes
 Surefire, sin copiar tokens ni credenciales.
+

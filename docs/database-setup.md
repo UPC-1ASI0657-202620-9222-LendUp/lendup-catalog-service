@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # MySQL y Flyway — configuración local
 
 Catálogo utiliza una **base de datos independiente**, administrada mediante migraciones Flyway. El esquema incluye categorías, publicaciones, disponibilidades e imágenes; no replica tablas de otros microservicios.
@@ -160,3 +162,4 @@ del volumen `catalog-mysql-data`.
 - Si MySQL rechaza credenciales tras cambiarlas, los usuarios del
   contenedor se inicializan al crear el volumen por primera vez; cambiar
   `.env` no cambia automáticamente contraseñas dentro de una base ya existente.
+

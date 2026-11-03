@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # API REST y DTOs de Catálogo
 
 ## Base y versión
@@ -176,3 +178,4 @@ Las operaciones protegidas requieren Firebase e Identidad configurados.
 Firebase, el cliente HTTP de Identidad, Cloudinary y OpenAPI/Swagger están
 implementados. La comunicación con Identidad se ha validado en desarrollo local.
 Quedan pendientes la validación extremo a extremo de archivos autenticados y el contrato entre Catálogo y Reservas.
+

@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # Arquitectura — Catálogo
 
 ## Alcance
@@ -43,3 +45,4 @@ no se incorporan sus tablas `reservas` ni `agendas_objeto`.
 ## Principios de mantenimiento
 
 Las responsabilidades se mantienen separadas entre dominio, casos de uso, persistencia y adaptadores externos. La integración con otros contextos debe realizarse mediante contratos explícitos, sin copiar las implementaciones internas del monolito.
+

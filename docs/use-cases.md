@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # Casos de uso y servicios de aplicación de Catálogo
 
 ## Interfaces de entrada
@@ -106,3 +108,4 @@ La suite de referencia consta de **97 pruebas aprobadas,
 ## Integraciones
 
 Los controladores REST y DTO implementan actualizaciones parciales y gestión de errores HTTP. La seguridad se integra con Firebase y el microservicio de Identidad.
+

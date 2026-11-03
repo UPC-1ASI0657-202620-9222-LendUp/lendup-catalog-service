@@ -210,6 +210,11 @@ public class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITestOutputH
         var count = 0; Task<int> Query(CancellationToken _) => Task.FromResult(++count);
         var key = Guid.NewGuid().ToString(); Assert.Equal(1,await cache.Obtener(key,Query,default)); Assert.Equal(1,await cache.Obtener(key,Query,default));
         await Task.Delay(200); Assert.Equal(2,await cache.Obtener(key,Query,default)); Assert.Equal(3,await cache.Obtener(key+"filter",Query,default));
+        var concurrentCalls=0;
+        async Task<int> SlowQuery(CancellationToken ct) { Interlocked.Increment(ref concurrentCalls); await Task.Delay(20,ct); return 42; }
+        var concurrentKey=Guid.NewGuid().ToString();
+        Assert.All(await Task.WhenAll(Enumerable.Range(0,10).Select(_=>cache.Obtener(concurrentKey,SlowQuery,default))),v=>Assert.Equal(42,v));
+        Assert.Equal(1,concurrentCalls);
         // A separate unreachable Redis instance verifies fail-open without disrupting other tests.
         var bad = new Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache(Microsoft.Extensions.Options.Options.Create(new Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions { Configuration="127.0.0.1:1,abortConnect=false,connectTimeout=100,syncTimeout=100,asyncTimeout=100,connectRetry=0" }));
         using (bad)
@@ -217,6 +222,35 @@ public class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITestOutputH
             var fallback = new ReadCache(bad,new(true,TimeSpan.FromSeconds(1)),NullLogger<ReadCache>.Instance);
             Assert.Equal(4,await fallback.Obtener("down",Query,default));
         }
+    }
+    [Fact] public async Task ImagenesValidanLimiteOrdenYFormatoHttp()
+    {
+        var url=await Crear("Imágenes");
+        async Task<HttpResponseMessage> Upload(byte[] bytes,string mime)
+        {
+            using var form=new MultipartFormDataContent(); var content=new ByteArrayContent(bytes); content.Headers.ContentType=new(mime); form.Add(content,"file","photo.jpg");
+            return await f.Client.PostAsync(url+"/imagenes",form);
+        }
+        Assert.Equal(HttpStatusCode.BadRequest,(await Upload([255,216,255],"image/png")).StatusCode);
+        var urls=new List<Uri>();
+        for(var n=0;n<8;n++)
+        {
+            var r=await Upload([255,216,255],"image/jpeg"); Assert.Equal(HttpStatusCode.Created,r.StatusCode); urls.Add(r.Headers.Location!);
+            Assert.Equal(n,(await r.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("orden").GetInt32());
+        }
+        Assert.Equal(HttpStatusCode.BadRequest,(await Upload([255,216,255],"image/jpeg")).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent,(await f.Client.DeleteAsync(urls[3])).StatusCode);
+        var reused=await Upload([255,216,255],"image/jpeg"); Assert.Equal(HttpStatusCode.Created,reused.StatusCode);
+        Assert.Equal(3,(await reused.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("orden").GetInt32());
+    }
+    [Fact] public async Task RestriccionesV1SeMantienen()
+    {
+        await using var conn=new MySqlConnection(f.Mysql.GetConnectionString()); await conn.OpenAsync();
+        await Assert.ThrowsAsync<MySqlException>(()=>new MySqlCommand("INSERT INTO categorias(id,codigo,nombre) VALUES(UUID(),'TEC','Duplicada')",conn).ExecuteNonQueryAsync());
+        await Assert.ThrowsAsync<MySqlException>(()=>new MySqlCommand("INSERT INTO disponibilidades_publicacion(id,publicacion_id,desde,hasta) VALUES(UUID(),'ffffffff-ffff-4fff-8fff-ffffffffffff','2026-12-12','2026-12-13')",conn).ExecuteNonQueryAsync());
+        var url=await Crear("Restricciones"); var id=url.Split('/').Last();
+        var cmd=new MySqlCommand("INSERT INTO imagenes_publicacion(id,publicacion_id,cloudinary_public_id,url,orden) VALUES(UUID(),@id,'fake','https://example.test/image',0)",conn); cmd.Parameters.AddWithValue("@id",id);
+        await cmd.ExecuteNonQueryAsync(); await Assert.ThrowsAsync<MySqlException>(()=>cmd.ExecuteNonQueryAsync());
     }
     [Fact] public async Task CategoriasInactivasOcultanCacheYFKs()
     {

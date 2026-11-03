@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # Modelo de dominio de Catálogo
 
 El modelo de dominio se implementa con **Java puro**, sin dependencias directas de JPA, Spring ni los adaptadores HTTP o de autenticación. Los detalles de infraestructura se documentan por separado.
@@ -55,3 +57,4 @@ Ejecutar desde la raíz del repositorio con JDK 21:
 
 Las pruebas del dominio forman parte de la suite global de 97 pruebas
 aprobadas en el entorno de desarrollo.
+

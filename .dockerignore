@@ -1,0 +1,11 @@
+**/bin
+**/obj
+.git
+.env
+.env.*
+.secrets
+target
+work
+TestResults
+**/*service-account*.json
+**/*firebase-adminsdk*.json

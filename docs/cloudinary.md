@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # Imágenes de publicaciones con Cloudinary
 
 El binario se almacena en Cloudinary y la tabla MySQL `imagenes_publicacion`
@@ -45,3 +47,4 @@ Las pruebas unitarias/MockMvc usan mocks y no consumen créditos de Cloudinary.
 La suite completa aprobada en desarrollo local consta de 97 pruebas.
 La prueba real de POST necesita configurar tanto Cloudinary como
 Firebase e Identidad. Nunca subir `.env`, `.secrets/` ni API secrets.
+

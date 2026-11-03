@@ -51,7 +51,8 @@ builder.Services.AddSingleton<IFirebaseTokenVerifier>(_ =>
 });
 builder.Services.AddHttpClient<IIdentidadClient, IdentidadClient>(http =>
 {
-    http.BaseAddress = IdentidadClient.ValidarBase(Env("IDENTITY_BASE_URL", "http://localhost:8081"), builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"));
+    try { http.BaseAddress = IdentidadClient.ValidarBase(Env("IDENTITY_BASE_URL", "http://localhost:8081"), builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")); }
+    catch (InvalidOperationException) { throw CatalogoException.Dependencia(); }
     http.Timeout = TimeSpan.FromSeconds(4);
 }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(3), AllowAutoRedirect = false });
 builder.Services.AddAuthentication("Firebase").AddScheme<AuthenticationSchemeOptions, FirebaseAuthentication>("Firebase", _ => { });
@@ -68,6 +69,7 @@ builder.Services.AddSwaggerGen(o =>
 {
     o.SwaggerDoc("v1", new OpenApiInfo { Title = "LendUp Catálogo", Version = "v1" });
     o.AddSecurityDefinition("firebaseBearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "Firebase ID token" });
+    o.OperationFilter<CatalogoOpenApi>();
 });
 var app = builder.Build();
 app.Use(async (context, next) =>

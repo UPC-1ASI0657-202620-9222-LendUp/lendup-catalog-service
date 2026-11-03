@@ -1,3 +1,5 @@
+> Referencia Java conservada durante la migración. Para la implementación ASP.NET Core, consultar [la guía .NET](dotnet-guide.md) y [la validación y limitación de fechas](migration-validation.md).
+
 # Persistencia JPA de Catálogo
 
 ## Implementación
@@ -86,3 +88,4 @@ de las migraciones Flyway aplicadas.
 Los casos de uso, controladores REST, validación Firebase y gestión de
 imágenes Cloudinary están implementados. La conexión HTTP con Identidad se ha
 validado en un entorno local; el contrato de disponibilidad con Reservas sigue pendiente.
+
