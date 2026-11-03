@@ -5,6 +5,8 @@ import com.lendup.catalogo.config.UsuarioActual;
 import com.lendup.catalogo.interfaces.rest.dto.DisponibilidadRequest;
 import com.lendup.catalogo.interfaces.rest.dto.DisponibilidadResponse;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Disponibilidad")
+@SecurityRequirement(name = "firebaseBearer")
 @RequestMapping("/api/v1/catalogo/publicaciones/{publicacionId}/disponibilidades")
 public class DisponibilidadController {
     private final GestionarDisponibilidadUseCase disponibilidad;
