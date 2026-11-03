@@ -24,27 +24,23 @@ Puerto HTTP local: `8082`. Base de rutas: `/api/v1/catalogo`.
 de disponibilidad del paso 7 son sólo para propietarios; el contrato interno de
 Reservas se acordará y publicará en un paso posterior.
 
-## Seguridad / limitación intencional del paso 7
+## Seguridad y control de acceso
 
-Para evitar suplantación, **NO se acepta `actorUsuarioId`, `propietarioUsuarioId`,
-`X-User-Id` ni identificadores arbitrarios del cliente como identidad confiable**.
-El adaptador `UsuarioActual` sólo acepta un principal tipado `UsuarioAutenticado`
-dentro del contexto Spring Security. **Todavía no existe ningún autenticador HTTP**
-que cree ese principal desde Firebase/Identidad.
+Catálogo no considera confiables `actorUsuarioId`, `propietarioUsuarioId`,
+`X-User-Id` ni identificadores de usuario aportados por el cliente.
 
-Por tanto:
-- Las consultas públicas sí pueden probarse en HTTP.
-- En esta etapa, **las operaciones autenticadas rechazarán peticiones HTTP
-  externas con 401**, aun con un header inventado o Basic Auth.
-- Las pruebas MockMvc simulan *internamente* un contexto autenticado con
-  `UsuarioAutenticado` para validar los controladores y sus casos de uso.
-- El paso de autenticación futuro implementará la verificación Firebase,
-  resolverá el UUID interno contra Identidad y configurará autenticación Bearer.
-  No activar un bypass de desarrollo con headers sin verificar.
-- Acceso con un principal autenticado de tipo incorrecto devuelve 403.
-- Se deshabilita CSRF porque se prepara una API sin sesiones ni cookies
-  (futura autenticación Bearer); no hay formularios ni autenticación Basic.
-- El servicio rechaza identidades de otros propietarios en los casos de uso.
+`UsuarioActual` exige un principal tipado `UsuarioAutenticado`. Desde
+el paso 8, Firebase Admin valida el token y el cliente de Identidad resuelve
+el UUID interno. La autenticación efectiva requiere que ambos servicios
+estén configurados y disponibles.
+
+- Las consultas públicas pueden realizarse sin autenticación.
+- Las operaciones protegidas requieren identidad autenticada; sin token
+  devuelven **401**. No se permite suplantación mediante cabeceras.
+- Las pruebas MockMvc simulan un principal tipado para verificar permisos.
+- Un principal incompatible no concede acceso a datos del propietario.
+- Se usa una API sin sesiones, sin autenticación Basic y con CSRF deshabilitado.
+- Los casos de uso comprueban la propiedad antes de modificar publicaciones.
 
 ## Ejemplo de creación
 
@@ -132,8 +128,8 @@ respuesta estándar del servidor, no el DTO `ApiError`.
 `CatalogoRestControllerTest` es una prueba de *slice* MVC `@WebMvcTest`,
 que ejecuta rutas, validación, serialización Jackson 3, filtros de seguridad
 y mapeo de excepciones. Los puertos son mocks; no necesita MySQL para ese test.
-También se ejecutan las **45 pruebas existentes** de dominio, aplicación y
-persistencia con la configuración de MySQL del proyecto.
+El resto de la suite cubre dominio, aplicación, persistencia e integraciones
+con la configuración de MySQL del proyecto.
 
 ### Windows / VS Code
 
@@ -145,8 +141,8 @@ git pull origin develop
 docker compose ps
 ```
 
-Si MySQL está apagado: `docker compose up -d mysql`.
-Si la terminal de VS Code es nueva, prepara las variables locales:
+Si MySQL no está activo: `docker compose up -d mysql`.
+En una terminal nueva deben establecerse las variables locales:
 
 ```powershell
 $jdk21 = Get-ChildItem "C:\Program Files\Microsoft" -Directory -Filter "jdk-21*" | Select-Object -First 1 -ExpandProperty FullName
@@ -157,30 +153,28 @@ $mavenHome = Split-Path (Split-Path $mvn.FullName -Parent) -Parent
 $env:DB_PASSWORD = Read-Host "Contraseña de Catálogo"
 ```
 
-Ejecutar con Java 21 directo (en esta máquina fallaba el `.cmd`):
+Alternativa para instalaciones donde el script Maven `.cmd` falle:
 
 ```powershell
 & "$env:JAVA_HOME\bin\java.exe" "-Dmaven.multiModuleProjectDirectory=$((Get-Location).Path)" "-Dmaven.home=$mavenHome" "-Dclassworlds.conf=$mavenHome\bin\m2.conf" -cp "$mavenHome\boot\*" org.codehaus.plexus.classworlds.launcher.Launcher test
 ```
 
-Resultado esperado: **61 pruebas** (45 anteriores + 16 REST),
-`Failures: 0`, `Errors: 0`, `BUILD SUCCESS`.
-Esto aún **debe verificarse en tu Windows**: no se han ejecutado las
-pruebas remotas desde el conector GitHub.
+En el paso 7 se aprobaron **61 pruebas** (45 previas y 16 REST).
+La suite completa actual alcanzó **97 pruebas aprobadas en Windows**,
+`Failures: 0`, `Errors: 0` y `BUILD SUCCESS`.
 
-Para probar un endpoint público manualmente, después de una compilación correcta,
-inicia la aplicación con tu mismo lanzador Java cambiando `test` por
-`spring-boot:run` y ejecuta en **otra** terminal:
+Para probar un endpoint público manualmente, iniciar Spring Boot con
+`spring-boot:run` y consultar desde otra terminal:
 
 ```powershell
 Invoke-RestMethod http://localhost:8082/api/v1/catalogo/categorias
 ```
 
 Es normal recibir `[]` si no hay categorías activas aún.
-Evita intentar POST/PUT/PATCH/DELETE reales hasta configurar Firebase/Identidad.
+Las operaciones protegidas requieren Firebase e Identidad configurados.
 
-## Pendiente
+## Integraciones posteriores
 
-La verificación de identidad Firebase, resolución del usuario UUID interno y
-autenticación de servicios hacia Reservas son implementaciones posteriores.
-Cloudinary, imágenes y OpenAPI también quedan fuera de este paso.
+Firebase, el cliente HTTP de Identidad, Cloudinary y OpenAPI/Swagger ya están
+implementados. Siguen pendientes la validación real con Identidad, la carga
+de archivos autenticada y el contrato entre Catálogo y Reservas.
