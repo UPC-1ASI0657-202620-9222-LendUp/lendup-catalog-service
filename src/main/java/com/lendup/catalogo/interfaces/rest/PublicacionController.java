@@ -11,6 +11,9 @@ import com.lendup.catalogo.interfaces.rest.dto.CambiarEstadoRequest;
 import com.lendup.catalogo.interfaces.rest.dto.PublicacionRequest;
 import com.lendup.catalogo.interfaces.rest.dto.PublicacionResponse;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 
 @RestController
+@Tag(name = "Publicaciones")
 @RequestMapping("/api/v1/catalogo")
 public class PublicacionController {
     private final GestionarPublicacionesUseCase gestion;
@@ -59,12 +63,14 @@ public class PublicacionController {
         return PublicacionResponse.deDominio(pub);
     }
 
+    @Operation(summary = "Mis publicaciones", security = @SecurityRequirement(name = "firebaseBearer"))
     @GetMapping("/mis-publicaciones")
     public List<PublicacionResponse> mias() {
         return consultas.listarMisPublicaciones(usuario.exigirId()).stream()
                 .map(PublicacionResponse::deDominio).toList();
     }
 
+    @Operation(summary = "Crear publicación", security = @SecurityRequirement(name = "firebaseBearer"))
     @PostMapping("/publicaciones")
     public ResponseEntity<PublicacionResponse> crear(@Valid @RequestBody PublicacionRequest solicitud) {
         var creada = gestion.crear(new GestionarPublicacionesUseCase.Crear(usuario.exigirId(),
@@ -73,6 +79,7 @@ public class PublicacionController {
                 .body(PublicacionResponse.deDominio(creada));
     }
 
+    @Operation(summary = "Actualizar publicación", security = @SecurityRequirement(name = "firebaseBearer"))
     @PutMapping("/publicaciones/{id}")
     public PublicacionResponse actualizar(@PathVariable UUID id,
             @Valid @RequestBody PublicacionRequest solicitud) {
@@ -81,6 +88,7 @@ public class PublicacionController {
                         solicitud.detalles().aDominio(), solicitud.condiciones().aDominio())));
     }
 
+    @Operation(summary = "Modificar parcialmente", security = @SecurityRequirement(name = "firebaseBearer"))
     @PatchMapping("/publicaciones/{id}")
     public PublicacionResponse actualizarParcial(@PathVariable UUID id,
             @RequestBody JsonNode cambios) {
@@ -95,6 +103,7 @@ public class PublicacionController {
                         combinado.detalles().aDominio(), combinado.condiciones().aDominio())));
     }
 
+    @Operation(summary = "Cambiar estado", security = @SecurityRequirement(name = "firebaseBearer"))
     @PatchMapping("/publicaciones/{id}/estado")
     public PublicacionResponse cambiarEstado(@PathVariable UUID id,
             @Valid @RequestBody CambiarEstadoRequest solicitud) {
