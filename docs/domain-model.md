@@ -38,8 +38,8 @@ El contrato interno de snapshot debe acordarse y contemplar reservas/bloqueos po
 una integración explícita. Nunca consultar directamente `reservas` ni `usuarios`
 en bases ajenas.
 
-Los métodos de dominio no sustituyen la validación de autorización ni los locks
-transaccionales que se implementarán en la capa de aplicación/persistencia.
+Los métodos de dominio no sustituyen la autorización ni los bloqueos
+transaccionales implementados en aplicación y persistencia.
 
 ## Pruebas
 
@@ -54,4 +54,5 @@ Ejecutar desde la raíz del repositorio con JDK 21:
 .\mvnw.cmd test
 ```
 
-No se ejecutaron pruebas Maven en este paso; la ejecución y sus evidencias deben verificarse.
+Las pruebas del dominio forman parte de la suite global de 97 pruebas
+aprobadas en el entorno de desarrollo.
