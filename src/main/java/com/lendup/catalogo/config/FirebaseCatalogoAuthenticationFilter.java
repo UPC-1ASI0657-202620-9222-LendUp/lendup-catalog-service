@@ -39,6 +39,9 @@ public class FirebaseCatalogoAuthenticationFilter extends OncePerRequestFilter {
         if (!"GET".equalsIgnoreCase(request.getMethod())) return false;
         String ruta = request.getServletPath();
         return ruta.equals("/actuator/health") || ruta.startsWith("/actuator/health/")
+                || ruta.equals("/v3/api-docs") || ruta.startsWith("/v3/api-docs/")
+                || ruta.equals("/v3/api-docs.yaml")
+                || ruta.equals("/swagger-ui.html") || ruta.startsWith("/swagger-ui/")
                 || ruta.equals("/api/v1/catalogo/categorias")
                 || ruta.matches("/api/v1/catalogo/categorias/[^/]+")
                 || ruta.equals("/api/v1/catalogo/publicaciones")
