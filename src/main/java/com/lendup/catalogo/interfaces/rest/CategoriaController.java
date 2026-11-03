@@ -3,6 +3,7 @@ package com.lendup.catalogo.interfaces.rest;
 import com.lendup.catalogo.application.exception.RecursoNoEncontradoException;
 import com.lendup.catalogo.application.port.in.ConsultarCategoriasUseCase;
 import com.lendup.catalogo.interfaces.rest.dto.CategoriaResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Categorías")
 @RequestMapping("/api/v1/catalogo/categorias")
 public class CategoriaController {
     private final ConsultarCategoriasUseCase categorias;
