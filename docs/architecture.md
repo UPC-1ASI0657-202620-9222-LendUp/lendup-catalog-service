@@ -2,22 +2,23 @@
 
 ## Estado
 
-**Solo estructura DDD creada.** Este cambio no implementa endpoints, migraciones, autenticación,
-clientes gRPC, persistencia ni integración con otros microservicios. El proyecto Spring Boot existente permanece intacto.
+Este documento recoge la **estructura DDD definida inicialmente**. Los endpoints,
+las migraciones, la persistencia, Firebase y Cloudinary se incorporaron en etapas
+posteriores. La integración real con Identidad y Reservas depende de sus contratos.
 
 ## Responsabilidad y propiedad de datos
 
-Catálogo será responsable de publicaciones, categorías, imágenes de publicaciones y disponibilidad ofrecida.
-Las tablas por extraer del monolito se revisarán antes de crear una migración Flyway:
+Catálogo es responsable de publicaciones, categorías, imágenes de publicaciones y
+disponibilidad ofrecida. Las tablas propias modeladas a partir del monolito son:
 
 - `categorias`
 - `publicaciones`
 - `imagenes_publicacion`
 - `disponibilidades_publicacion`
 
-Los UUID de propietarios se almacenarán como referencias externas, sin consultar directamente la tabla
+Los UUID de propietarios se almacenan como referencias externas, sin consultar directamente la tabla
 `usuarios` de Identidad. La ocupación de periodos por reservas requiere un contrato explícito con Reservas;
-no se trasladarán sus tablas `reservas` ni `agendas_objeto`.
+no se incorporan sus tablas `reservas` ni `agendas_objeto`.
 
 ## Capas
 
@@ -32,21 +33,21 @@ no se trasladarán sus tablas `reservas` ni `agendas_objeto`.
 - `interfaces/rest` y `interfaces/rest/dto`: API y contratos HTTP.
 - `config`: configuración transversal y de seguridad.
 
-## Integraciones previstas (aún no implementadas)
+## Integraciones y estado actual
 
-- **Identidad:** resolver el Firebase UID autenticado al UUID interno del usuario sin compartir tablas.
-  El equipo evaluará gRPC para esta comunicación, con autenticación de servicio.
-- **Reservas:** publicar un contrato REST interno para snapshot autoritativo de una publicación y
-  disponibilidad del periodo solicitado. El servicio de Reservas existente ya espera esta operación,
-  pero no existe todavía una ruta acordada.
-- **Cloudinary:** adaptar el almacenamiento de imágenes del monolito manteniendo los controles de propiedad.
+- **Identidad:** el adaptador HTTP resuelve el Firebase UID al UUID interno sin compartir
+  tablas. La verificación real depende de la disponibilidad del servicio de Identidad.
+- **Reservas:** el contrato interno para consultar publicaciones y periodos ofrecidos
+  está pendiente de coordinación; no existe acceso directo a la base de Reservas.
+- **Cloudinary:** se implementaron subida, consulta y eliminación de fotografías con
+  control de propiedad. La operación real requiere credenciales y un usuario autenticado.
 
-## Próxima implementación
+## Evolución de la implementación
 
-1. Modelar `Publicacion`, disponibilidad y reglas de dominio con pruebas unitarias.
-2. Definir puertos de aplicación y casos de uso compatibles con la API actual.
-3. Crear Flyway para la BD propia `lendup_catalogo`.
-4. Implementar adaptadores de persistencia, Firebase y las integraciones acordadas.
-5. Agregar endpoints, OpenAPI, Docker y pruebas contractuales/integración.
+1. Modelo de dominio y reglas de disponibilidad.
+2. Puertos y casos de uso.
+3. Esquema propio mediante Flyway y adaptadores de persistencia.
+4. Seguridad Firebase y adaptador de Identidad.
+5. API REST, Cloudinary, OpenAPI y pruebas de integración.
 
 No copiar `Store.java`, `FlowSupport.java` ni `schema.sql` completos del monolito.
