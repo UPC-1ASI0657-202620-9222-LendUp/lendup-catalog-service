@@ -1,7 +1,6 @@
-# Dominio de Catálogo — paso 3
+# Modelo de dominio de Catálogo
 
-Esta etapa implementa **solo Java puro y pruebas unitarias**. No implementa JPA, SQL,
-controladores, Firebase, eventos ni comunicaciones gRPC/REST.
+El modelo de dominio se implementa con **Java puro**, sin dependencias directas de JPA, Spring ni los adaptadores HTTP o de autenticación. Los detalles de infraestructura se documentan por separado.
 
 ## Clases
 

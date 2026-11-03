@@ -1,28 +1,12 @@
-# Paso 8 — Firebase Authentication e integración con Identidad
+# Autenticación Firebase e integración con Identidad
 
-## Contrato revisado (2 de noviembre de 2026)
+## Contrato HTTP de Identidad
 
-La revisión del repositorio público del backend original
-`UPC-1ASI0657-202620-9222-LendUp/lendup-backend`
-rama `main` mostró:
+El microservicio de Identidad proporciona `GET /api/v1/estudiantes/me` y devuelve una estructura compatible con `{ "usuario": { "id": "UUID", ... }, "perfil": { ... } }`. El identificador se resuelve a partir de un token Firebase verificado, nunca de un ID suministrado por el cliente.
 
-- `GET /api/v1/estudiantes/me` en
-  `identidad/interfaces/rest/IdentidadController.java`.
-- Respuesta de `IdentidadApplicationService.me`:
-  `{"usuario": {...,"id":"UUID",...}, "perfil": {...}}`.
-- `FlowSupport.user()` recupera `usuarios` por `firebase_uid` obtenido
-  **del contexto de seguridad**, no por un ID enviado en la solicitud.
-- El monolito ya utiliza Firebase Admin y envía el ID token Firebase en
-  `Authorization: Bearer <token>`.
-- Si no existe perfil para el Firebase UID, devuelve **403**.
-- No se encontró un repositorio independiente de Identidad accesible con un
-  contrato HTTP o gRPC específico para microservicios.
+Catálogo consulta este endpoint mediante `IdentidadHttpClient` y una URL base configurable (`IDENTITY_BASE_URL`). No comparte tablas con Identidad ni utiliza el Firebase UID como identificador interno del propietario. El contrato también conserva compatibilidad con la API de estudiantes del backend original.
 
-Por ello este paso usa el contrato **existente** `GET /api/v1/estudiantes/me`
-con una URL base configurable. La creación de una API interna específica de
-Identidad (mTLS, gRPC, etc.) necesita coordinación con ese equipo; no se
-inventó ese endpoint. Si el servidor de Identidad reemplaza al monolito, debe
-conservar el contrato o adaptar el puerto `IdentidadUsuarioPort`.
+La integración HTTP autenticada entre ambos microservicios ha sido comprobada en un entorno local. En despliegues separados deben configurarse las credenciales, la red y el transporte seguro correspondientes.
 
 ## Flujo de seguridad
 
@@ -52,7 +36,7 @@ Las demás requieren autenticación completa.
 
 ## Configuración segura / activación
 
-De fábrica, `CATALOGO_FIREBASE_ENABLED=false` para seguir ejecutando las
+De forma predeterminada, `CATALOGO_FIREBASE_ENABLED=false` permite ejecutar las
 consultas públicas y las pruebas locales sin credenciales o sin Identidad.
 Cuando está deshabilitado, la ruta protegida **no se puede utilizar**
 con un Bearer real; cualquier token provoca 503 y sin token recibe 401.
@@ -64,7 +48,7 @@ Para **activar** la autenticación hay que preparar:
 |---|---|
 | `CATALOGO_FIREBASE_ENABLED=true` | Instancia y activa los adaptadores Firebase/Identidad |
 | `FIREBASE_PROJECT_ID` | ID exacto del proyecto Firebase |
-| `IDENTITY_BASE_URL` | Dirección de Identidad sin `/api/v1`, por ejemplo `http://localhost:8080` en desarrollo local |
+| `IDENTITY_BASE_URL` | Dirección base de Identidad, sin `/api/v1`; por ejemplo `http://localhost:8081` en desarrollo local |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Ruta local fuera del repositorio a una cuenta de servicio válida, o usar Google Application Default Credentials |
 | `FIREBASE_AUTH_EMULATOR_HOST` | **Opcional**: host:puerto del emulador de Authentication en desarrollo, como `127.0.0.1:9099` |
 | `CORS_ORIGINS` | Orígenes exactos separados por comas, por defecto `http://localhost:5173` |
@@ -83,8 +67,8 @@ usar una URL HTTPS alcanzable y autorizada en la red del despliegue.
 
 **Dependencias externas:** el emulador, la aplicación de Identidad y su base de datos
 se configuran de manera independiente. La integración de Catálogo no instala
-estos componentes ni incluye sus credenciales. El filtro debe permanecer
-desactivado hasta que estén disponibles.
+estos componentes ni incluye sus credenciales. La autenticación debe habilitarse
+solo cuando dichas dependencias estén disponibles.
 
 ## Semántica de errores
 
@@ -100,7 +84,7 @@ Las consultas públicas omiten la validación Bearer; las rutas de escritura
 son *fail-closed*. Los OPTIONS de preflight CORS pueden ejecutarse
 sin sesión sólo desde orígenes autorizados.
 
-## Tests agregados
+## Pruebas de seguridad e integración
 
 1. `FirebaseCatalogoAuthenticationFilterTest`:
    firma/claims mediante puerto simulado, contexto interno correcto,
@@ -114,10 +98,9 @@ sin sesión sólo desde orígenes autorizados.
 4. `CatalogoRestControllerTest`:
    dos pruebas HTTP de autenticación Bearer y una de preflight CORS.
 
-**Verificación de la etapa:** 82 pruebas aprobadas (61 previas y 21 nuevas).
-La suite completa del proyecto fue validada posteriormente con **97 pruebas aprobadas**.
+La suite automatizada de referencia consta de **97 pruebas aprobadas**. La comunicación HTTP real con Identidad se ha comprobado adicionalmente en un entorno local.
 
-## Windows / VS Code
+## Ejecución local (Windows PowerShell)
 
 Desde una terminal con Java 21 y Maven configurados:
 
@@ -138,7 +121,5 @@ Comando alternativo en instalaciones donde los scripts `.cmd` de Maven fallen:
 & "$env:JAVA_HOME\bin\java.exe" "-Dmaven.multiModuleProjectDirectory=$((Get-Location).Path)" "-Dmaven.home=$mavenHome" "-Dclassworlds.conf=$mavenHome\bin\m2.conf" -cp "$mavenHome\boot\*" org.codehaus.plexus.classworlds.launcher.Launcher test
 ```
 
-Registro de esta etapa: `Tests run: 82, Failures: 0, Errors: 0`,
-`BUILD SUCCESS`. En la versión actual, la suite reúne 97 pruebas.
 Para diagnosticar errores, consultar los bloques `[ERROR]` y los informes
 Surefire, sin copiar tokens ni credenciales.

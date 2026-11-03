@@ -1,10 +1,8 @@
-# Arquitectura inicial — Catálogo
+# Arquitectura — Catálogo
 
-## Estado
+## Alcance
 
-Este documento recoge la **estructura DDD definida inicialmente**. Los endpoints,
-las migraciones, la persistencia, Firebase y Cloudinary se incorporaron en etapas
-posteriores. La integración real con Identidad y Reservas depende de sus contratos.
+Este documento describe la organización DDD de Catálogo, sus límites de datos, los adaptadores implementados y las integraciones con otros microservicios.
 
 ## Responsabilidad y propiedad de datos
 
@@ -36,18 +34,12 @@ no se incorporan sus tablas `reservas` ni `agendas_objeto`.
 ## Integraciones y estado actual
 
 - **Identidad:** el adaptador HTTP resuelve el Firebase UID al UUID interno sin compartir
-  tablas. La verificación real depende de la disponibilidad del servicio de Identidad.
+  tablas. La comunicación entre servicios se ha validado en el entorno local.
 - **Reservas:** el contrato interno para consultar publicaciones y periodos ofrecidos
   está pendiente de coordinación; no existe acceso directo a la base de Reservas.
 - **Cloudinary:** se implementaron subida, consulta y eliminación de fotografías con
   control de propiedad. La operación real requiere credenciales y un usuario autenticado.
 
-## Evolución de la implementación
+## Principios de mantenimiento
 
-1. Modelo de dominio y reglas de disponibilidad.
-2. Puertos y casos de uso.
-3. Esquema propio mediante Flyway y adaptadores de persistencia.
-4. Seguridad Firebase y adaptador de Identidad.
-5. API REST, Cloudinary, OpenAPI y pruebas de integración.
-
-No copiar `Store.java`, `FlowSupport.java` ni `schema.sql` completos del monolito.
+Las responsabilidades se mantienen separadas entre dominio, casos de uso, persistencia y adaptadores externos. La integración con otros contextos debe realizarse mediante contratos explícitos, sin copiar las implementaciones internas del monolito.
