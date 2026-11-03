@@ -105,3 +105,6 @@ Si falla guardar o confirmar tras una subida, se intenta eliminar el recurso rem
 ## Pruebas y CI
 
 Las cuatro suites cubren dominio, aplicación, contratos y HTTP/persistencia con Testcontainers. Docker debe estar disponible. Contenedores MySQL 8.4/Redis se crean con puertos efímeros y se eliminan al terminar; no usan Compose ni volúmenes existentes. WebApplicationFactory reemplaza Firebase, Identidad y Cloudinary sólo en pruebas. `dotnet test` ejecuta la integración sin opt-in silencioso. GitHub Actions restaura, compila Release y ejecuta pruebas en Ubuntu con Docker. Resultados reales y pendientes se registran en migration-validation.md.
+
+La prueba del helper confirmó Flyway V1 e historia en una base vacía, y rechazo de la segunda inicialización. Flyway 11.14.1 emite un aviso de que su última versión MySQL verificada es 8.1; la ejecución real con 8.4 fue correcta. No se usa ese aviso como prueba de soporte formal del proveedor EF, que se valida por separado con MySQL 8.4.
+

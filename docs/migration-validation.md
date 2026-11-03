@@ -13,11 +13,12 @@ Validación local del 3 de noviembre de 2026:
 | .NET restore y build Release | Correctos; build con cero errores y cero advertencias |
 | Domain.Tests | 16 aprobadas |
 | Application.Tests | 12 aprobadas |
-| Api.Tests | 22 aprobadas |
+| Api.Tests | 26 aprobadas |
 | Integration.Tests | 18 aprobadas contra MySQL 8.4 y Redis 7.4 |
-| Total .NET | 68 ejecutadas, 68 aprobadas, ninguna omitida |
+| Total .NET | 72 ejecutadas, 72 aprobadas, ninguna omitida |
 | Java / Maven / JDK 21 | 97 ejecutadas, 97 aprobadas, ninguna omitida, BUILD SUCCESS |
-| Docker multi-stage .NET | Imagen local construida correctamente; no publicada |
+| Docker multi-stage .NET | Imagen local construida correctamente; usuario 1654 sin privilegios; no publicada |
+| Inicialización Flyway 11.14.1 | V1 aplicada en base vacía y segunda ejecución rechazada; historia v1 verificada |
 | Comparación HTTP Java UTC / .NET | Cinco consultas públicas con JSON equivalente y ruta protegida sin Bearer con 401 equivalente |
 | Comparación HTTP Java Lima / .NET | Categorías equivalentes; publicaciones difieren en horas de disponibilidad |
 
@@ -95,3 +96,4 @@ Base /api/v1/catalogo. La suite FlujoDeLos16Endpoints ejecuta los 16 métodos/ru
 `scripts/compare-contracts.ps1` compara JSON normalizado sin alterar arrays ni fechas. Requiere servicios de prueba con bases separadas restauradas del mismo fixture y UUID explícitos. No usa datos personales por defecto. Para Java UTC configurar -Duser.timezone=UTC; para reproducir la divergencia usar la zona real de la JVM de referencia. No normalizar ni ignorar fechas en el comparador.
 
 Ver dotnet-guide.md para inicio en Windows, preservación de Flyway V1, secretos y rollback. Etapa I permanece pendiente hasta resolver el primer punto.
+

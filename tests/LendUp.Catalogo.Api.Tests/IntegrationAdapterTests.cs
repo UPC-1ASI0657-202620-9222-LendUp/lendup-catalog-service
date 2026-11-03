@@ -29,6 +29,7 @@ public sealed class IntegrationAdapterTests
     [Theory,InlineData("http://remote.test",true),InlineData("http://localhost",false),InlineData("https://user:password@identity.test",true)]
     public void RechazaUrlInsegura(string url,bool development) => Assert.Throws<InvalidOperationException>(() => IdentidadClient.ValidarBase(url,development));
     [Fact] public void AceptaLocalSoloEnDesarrollo() => Assert.Equal("localhost",IdentidadClient.ValidarBase("http://localhost:8081",true).Host);
+    [Fact] public void ConservaPrefijoDeIdentidad() => Assert.Equal("/prefix/",IdentidadClient.ValidarBase("https://identity.test/prefix",false).AbsolutePath);
     [Fact] public async Task FirebaseYCloudinarySinConfigFallanSeguro()
     {
         Assert.Equal(503,(await Assert.ThrowsAsync<CatalogoException>(() => new FirebaseTokenVerifier(() => null).Verificar("token",default))).Status);

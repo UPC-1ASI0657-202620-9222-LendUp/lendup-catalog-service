@@ -22,10 +22,11 @@ public static class Solicitudes
 {
     private static JsonElement Campo(JsonElement json, string nombre)
         => json.ValueKind == JsonValueKind.Object && json.TryGetProperty(nombre, out var value) ? value : throw new ReglaDominioException(nombre + " es obligatorio");
-    private static string Texto(JsonElement json, string nombre)
+    private static string Texto(JsonElement json, string nombre, int max = int.MaxValue)
     {
         var value = Campo(json, nombre);
-        return value.ValueKind == JsonValueKind.String ? value.GetString()! : throw new ReglaDominioException(nombre + " inválido");
+        if (value.ValueKind != JsonValueKind.String || value.GetString()!.Length > max) throw new ReglaDominioException(nombre + " inválido");
+        return value.GetString()!;
     }
     private static decimal Decimal(JsonElement json, string nombre)
     {
@@ -39,9 +40,11 @@ public static class Solicitudes
     {
         var d = Campo(body, "detalles"); var c = Campo(body, "condiciones");
         if (d.ValueKind != JsonValueKind.Object || c.ValueKind != JsonValueKind.Object) throw new ReglaDominioException("Secciones obligatorias");
-        return (new(Uuid(Texto(d, "categoriaId")), Texto(d, "titulo"), Texto(d, "descripcion"), Texto(d, "condicionObjeto"),
-            Texto(d, "universidad"), Texto(d, "campus"), Texto(d, "ubicacion"), Opcional(d, "latitud"), Opcional(d, "longitud")),
-            new(Decimal(c, "tarifaDiaria"), Opcional(c, "garantiaMonetaria"), Texto(c, "moneda"), Texto(c, "lugarIntercambio"),
+        var moneda=Texto(c,"moneda");
+        if (!System.Text.RegularExpressions.Regex.IsMatch(moneda,"^[A-Z]{3}$")) throw new ReglaDominioException("Moneda inválida");
+        return (new(Uuid(Texto(d, "categoriaId")), Texto(d, "titulo",180), Texto(d, "descripcion"), Texto(d, "condicionObjeto"),
+            Texto(d, "universidad",150), Texto(d, "campus",150), Texto(d, "ubicacion",250), Opcional(d, "latitud"), Opcional(d, "longitud")),
+            new(Decimal(c, "tarifaDiaria"), Opcional(c, "garantiaMonetaria"), moneda, Texto(c, "lugarIntercambio",250),
                 Texto(c, "condicionesUso"), Texto(c, "condicionesEntrega"), Texto(c, "condicionesDevolucion"), Texto(c, "condicionesCancelacion")));
     }
     public static EstadoPublicacion Estado(JsonElement body)

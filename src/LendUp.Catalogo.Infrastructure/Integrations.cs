@@ -30,10 +30,10 @@ public sealed class IdentidadClient(HttpClient http) : IIdentidadClient
 {
     public static Uri ValidarBase(string url, bool desarrollo)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !string.IsNullOrEmpty(uri.UserInfo)
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !string.IsNullOrEmpty(uri.UserInfo) || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment)
             || (uri.Scheme != "https" && !(desarrollo && uri.Scheme == "http" && uri.Host is "localhost" or "127.0.0.1")))
             throw new InvalidOperationException("Identidad requiere HTTPS; HTTP sólo para localhost en desarrollo");
-        return uri;
+        return new Uri(uri.GetLeftPart(UriPartial.Path).TrimEnd('/') + "/");
     }
     public async Task<Guid> Resolver(string token, CancellationToken ct)
     {

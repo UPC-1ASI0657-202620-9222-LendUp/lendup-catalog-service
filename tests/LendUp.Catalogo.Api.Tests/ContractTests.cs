@@ -16,4 +16,13 @@ public class ContractTests
     }
     [Theory,InlineData("{\"estado\":null}"),InlineData("{\"estado\":0}"),InlineData("{\"estado\":\"0\"}"),InlineData("{\"estado\":\"activa\"}")]
     public void EstadoEstricto(string json) => Assert.Throws<ReglaDominioException>(() => Solicitudes.Estado(JsonSerializer.Deserialize<JsonElement>(json)));
+    [Theory,InlineData(" PEN "),InlineData("PEN "),InlineData("P1N")]
+    public void MonedaRespetaValidacionHttpJava(string moneda)
+    {
+        var body=JsonSerializer.SerializeToElement(new {
+            detalles=new {categoriaId=Guid.NewGuid(),titulo="Cámara",descripcion="Desc",condicionObjeto="Bueno",universidad="UPC",campus="Campus",ubicacion="Lugar"},
+            condiciones=new {tarifaDiaria=10,moneda,lugarIntercambio="Campus",condicionesUso="Uso",condicionesEntrega="Entrega",condicionesDevolucion="Devolución",condicionesCancelacion="Aviso"}
+        });
+        Assert.Throws<ReglaDominioException>(()=>Solicitudes.Publicacion(body));
+    }
 }
