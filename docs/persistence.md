@@ -1,4 +1,4 @@
-# Paso 5 — Persistencia JPA del Catálogo
+# Persistencia JPA de Catálogo
 
 ## Implementación
 
@@ -21,17 +21,15 @@ se relaciona con la tabla de Identidad. Tampoco se consulta ninguna tabla de Res
 `PublicacionPersistencePort.guardar` actualiza los datos de la publicación y sincroniza
 los intervalos asociados **en una sola transacción**.
 
-Para editar una publicación existente, el caso de uso ejecuta **una única transacción** en la que primero llame a
+Para editar una publicación existente, el caso de uso debe ejecutar **una única transacción** en la que primero se invoque
 `buscarPorIdParaActualizar(id)`, aplique las reglas con `Publicacion` y finalmente
-llame a `guardar(publicacion)`. El método de lectura bloqueada exige una transacción
-activa. No hacer la lectura normal fuera de transacción y guardar después, pues eso
-permitiría sobrescribir intervalos escritos concurrentemente.
+se invoque `guardar(publicacion)`. El método de lectura bloqueada exige una transacción
+activa. Una lectura sin bloqueo seguida de una escritura puede sobrescribir intervalos registrados concurrentemente.
 
 `listarActivas` exige tanto `publicaciones.estado='ACTIVA'` como
 `categorias.activa=true`, siguiendo la consulta pública del monolito.
 
-`ImagenPublicacionPersistenceAdapter` guarda **metadatos**. La subida y
-eliminación de archivos reales se implementaron después mediante Cloudinary.
+`ImagenPublicacionPersistenceAdapter` guarda **metadatos**; el almacenamiento de los archivos se gestiona mediante el adaptador de Cloudinary.
 
 ### Ejecución de pruebas locales
 
@@ -76,10 +74,9 @@ también requiere MySQL accesible al ejecutar `mvnw test`. El servicio
 no necesita permanecer levantado con `spring-boot:run` para estas pruebas:
 lo que sí debe estar activo es el contenedor de **MySQL**.
 
-### Estado de verificación
+### Verificación
 
-Los archivos se encuentran publicados en `develop`. La suite completa fue
-validada en Windows con **97 pruebas aprobadas**, incluyendo pruebas de
+La suite de referencia consta de **97 pruebas aprobadas**, incluidas pruebas de
 persistencia contra MySQL. Ante divergencias detectadas por
 `ddl-auto: validate`, revisar tipos JPA/SQL y conservar la integridad
 de las migraciones Flyway aplicadas.
@@ -87,5 +84,5 @@ de las migraciones Flyway aplicadas.
 ### Integraciones relacionadas
 
 Los casos de uso, controladores REST, validación Firebase y gestión de
-imágenes Cloudinary están implementados. La conexión real con Identidad y
-el contrato de disponibilidad con Reservas siguen pendientes.
+imágenes Cloudinary están implementados. La conexión HTTP con Identidad se ha
+validado en un entorno local; el contrato de disponibilidad con Reservas sigue pendiente.

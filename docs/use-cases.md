@@ -1,4 +1,4 @@
-# Paso 6 — Casos de uso y servicios de aplicación de Catálogo
+# Casos de uso y servicios de aplicación de Catálogo
 
 ## Interfaces de entrada
 
@@ -42,9 +42,9 @@ autenticado que se le pasa.
   `DisponibilidadSuperpuestaException` extiende `IllegalArgumentException`,
   permitiendo distinguir colisiones para responder **409** en REST.
 - `RecursoNoEncontradoException`: publicación, categoría o intervalo
-  inexistente (**404** propuesto).
+  inexistente (**404** en REST).
 - `AccesoDenegadoException`: actor diferente del propietario
-  (**403** propuesto).
+  (**403** en REST).
 - No se introdujo bloqueo de cambios de estado desde `DADA_DE_BAJA`
   porque el monolito no lo imponía.
 - El caso de uso verifica que exista la categoría al crear o modificar,
@@ -58,9 +58,7 @@ bloqueos, elegibilidad, vigencia, autorización interservicios ni si la publicac
 está activa. Para la futura API interna de Reservas habrá que completar
 esos contratos con los responsables de los otros microservicios.
 
-Durante esta etapa no se crearon tablas, FKs ni consultas a contextos ajenos.
-Los controladores REST y la integración Cloudinary se incorporaron posteriormente;
-no se añaden tablas compartidas ni clientes gRPC/RabbitMQ.
+No se crean tablas, claves foráneas ni consultas directas a datos de otros contextos. Las integraciones externas se implementan mediante adaptadores y contratos explícitos.
 
 ## Pruebas
 
@@ -72,10 +70,9 @@ no se añaden tablas compartidas ni clientes gRPC/RabbitMQ.
 - `CatalogoApplicationIntegrationTest`: flujo completo real
   Spring Boot + MySQL de Docker, con rollback al finalizar.
 
-### Ejecución de pruebas en Windows / VS Code
+### Ejecución local de pruebas (Windows PowerShell)
 
-Requisitos: **Docker Desktop** con Engine activo y **VS Code** abierto
-en la raíz de `lendup-catalog-service`. Verificación:
+Requisitos: **Docker Desktop** con Engine activo y una terminal en la raíz de `lendup-catalog-service`. Verificación:
 
 ```powershell
 git switch develop
@@ -103,11 +100,9 @@ se puede utilizar el lanzador de Maven mediante Java 21:
 & "$env:JAVA_HOME\bin\java.exe" "-Dmaven.multiModuleProjectDirectory=$((Get-Location).Path)" "-Dmaven.home=$mavenHome" "-Dclassworlds.conf=$mavenHome\bin\m2.conf" -cp "$mavenHome\boot\*" org.codehaus.plexus.classworlds.launcher.Launcher test
 ```
 
-La suite global del proyecto se ejecutó en Windows con **97 pruebas,
+La suite de referencia consta de **97 pruebas aprobadas,
 0 fallos, 0 errores y `BUILD SUCCESS`**.
 
-## Evolución posterior
+## Integraciones
 
-Los controladores REST, DTO, actualizaciones parciales y manejo de errores
-HTTP se implementaron en el paso 7; Firebase y la integración con Identidad
-se añadieron en el paso 8.
+Los controladores REST y DTO implementan actualizaciones parciales y gestión de errores HTTP. La seguridad se integra con Firebase y el microservicio de Identidad.

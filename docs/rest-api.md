@@ -1,4 +1,4 @@
-# Paso 7 — API REST y DTOs de Catálogo
+# API REST y DTOs de Catálogo
 
 ## Base y versión
 
@@ -21,16 +21,15 @@ Puerto HTTP local: `8082`. Base de rutas: `/api/v1/catalogo`.
 | DELETE | `/publicaciones/{publicacionId}/disponibilidades/{id}` | Propietario autenticado | Elimina intervalo (204) |
 
 **Nota:** los intervalos ofrecidos no descuentan reservas confirmadas. Los métodos
-de disponibilidad del paso 7 son sólo para propietarios; el contrato interno de
-Reservas se acordará y publicará en un paso posterior.
+de disponibilidad son sólo para propietarios; el contrato interno de
+Reservas requiere una integración independiente.
 
 ## Seguridad y control de acceso
 
 Catálogo no considera confiables `actorUsuarioId`, `propietarioUsuarioId`,
 `X-User-Id` ni identificadores de usuario aportados por el cliente.
 
-`UsuarioActual` exige un principal tipado `UsuarioAutenticado`. Desde
-el paso 8, Firebase Admin valida el token y el cliente de Identidad resuelve
+`UsuarioActual` exige un principal tipado `UsuarioAutenticado`. Firebase Admin valida el token y el cliente de Identidad resuelve
 el UUID interno. La autenticación efectiva requiere que ambos servicios
 estén configurados y disponibles.
 
@@ -131,7 +130,7 @@ y mapeo de excepciones. Los puertos son mocks; no necesita MySQL para ese test.
 El resto de la suite cubre dominio, aplicación, persistencia e integraciones
 con la configuración de MySQL del proyecto.
 
-### Windows / VS Code
+### Ejecución local (Windows PowerShell)
 
 En la raíz de `lendup-catalog-service`:
 
@@ -159,8 +158,7 @@ Alternativa para instalaciones donde el script Maven `.cmd` falle:
 & "$env:JAVA_HOME\bin\java.exe" "-Dmaven.multiModuleProjectDirectory=$((Get-Location).Path)" "-Dmaven.home=$mavenHome" "-Dclassworlds.conf=$mavenHome\bin\m2.conf" -cp "$mavenHome\boot\*" org.codehaus.plexus.classworlds.launcher.Launcher test
 ```
 
-En el paso 7 se aprobaron **61 pruebas** (45 previas y 16 REST).
-La suite completa actual alcanzó **97 pruebas aprobadas en Windows**,
+La suite automatizada de referencia reúne **97 pruebas aprobadas**, con
 `Failures: 0`, `Errors: 0` y `BUILD SUCCESS`.
 
 Para probar un endpoint público manualmente, iniciar Spring Boot con
@@ -175,6 +173,6 @@ Las operaciones protegidas requieren Firebase e Identidad configurados.
 
 ## Integraciones posteriores
 
-Firebase, el cliente HTTP de Identidad, Cloudinary y OpenAPI/Swagger ya están
-implementados. Siguen pendientes la validación real con Identidad, la carga
-de archivos autenticada y el contrato entre Catálogo y Reservas.
+Firebase, el cliente HTTP de Identidad, Cloudinary y OpenAPI/Swagger están
+implementados. La comunicación con Identidad se ha validado en desarrollo local.
+Quedan pendientes la validación extremo a extremo de archivos autenticados y el contrato entre Catálogo y Reservas.

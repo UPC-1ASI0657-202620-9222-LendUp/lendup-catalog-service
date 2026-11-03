@@ -1,6 +1,6 @@
-# Paso 10 — OpenAPI/Swagger en Catálogo
+# OpenAPI y Swagger en Catálogo
 
-Se añadió `springdoc-openapi-starter-webmvc-ui:3.0.3`, compatible
+La documentación de la API utiliza `springdoc-openapi-starter-webmvc-ui:3.0.3`, compatible
 con Spring Boot 4.0.x.
 
 Con el servicio local iniciado en el puerto 8082:

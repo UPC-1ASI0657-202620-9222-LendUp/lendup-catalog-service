@@ -1,15 +1,15 @@
-# Paso 9 — Imágenes de publicaciones con Cloudinary
+# Imágenes de publicaciones con Cloudinary
 
 El binario se almacena en Cloudinary y la tabla MySQL `imagenes_publicacion`
 conserva `cloudinary_public_id`, `url` y `orden`.
 
-## Configuración en Windows PowerShell
+## Configuración local (Windows PowerShell)
 
 Las credenciales de la cuenta se obtienen en Cloudinary Dashboard >
 **Go to API Keys**. Deben permanecer fuera del repositorio y de los registros públicos:
 
 ```powershell
-$env:CLOUDINARY_CLOUD_NAME = "dpdvrso6b"
+$env:CLOUDINARY_CLOUD_NAME = Read-Host "Cloudinary Cloud Name"
 $env:CLOUDINARY_API_KEY = Read-Host "Cloudinary API Key"
 $secreto = Read-Host "Cloudinary API Secret" -AsSecureString
 $env:CLOUDINARY_API_SECRET = [System.Net.NetworkCredential]::new("", $secreto).Password

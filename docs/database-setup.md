@@ -1,11 +1,10 @@
-# Paso 4 — MySQL y Flyway (desarrollo local)
+# MySQL y Flyway — configuración local
 
-Este paso prepara la **base de datos independiente** de Catálogo.
-No migra datos del monolito ni implementa entidades JPA / API REST.
+Catálogo utiliza una **base de datos independiente**, administrada mediante migraciones Flyway. El esquema incluye categorías, publicaciones, disponibilidades e imágenes; no replica tablas de otros microservicios.
 
 ## Requisitos
 
-- Windows PowerShell, Java 21 y Maven Wrapper disponibles en el entorno.
+- Java 21 y Maven Wrapper; los ejemplos siguientes usan Windows PowerShell.
 - **Docker Desktop instalado y abierto**, con Docker Engine activo.
 - Puertos libres: MySQL local **3308** y aplicación Spring Boot **8082**.
 
@@ -20,7 +19,7 @@ git pull origin develop
 
 ## 2. Preparar secretos locales (NO subir a Git)
 
-Crea un archivo **.env** en la raíz copiando el ejemplo:
+Crear un archivo **.env** en la raíz a partir del ejemplo:
 
 ```powershell
 Copy-Item .env.example .env
@@ -28,8 +27,37 @@ Copy-Item .env.example .env
 
 Configurar `.env` con valores distintos y suficientemente fuertes para
 `DB_PASSWORD` y `MYSQL_ROOT_PASSWORD`, manteniendo `DB_USERNAME=lendup_catalogo`.
-Las contraseñas no deben incluirse en capturas, mensajes ni commits. El archivo `.env` está
-incluido en `.gitignore`.
+Las contraseñas no deben incluirse en registros ni commits. El archivo `.env` está
+incluido en `.gitignore`. Cada línea debe utilizar formato `VARIABLE=valor`, no sintaxis de comandos PowerShell. Si una contraseña contiene `# MySQL y Flyway — configuración local
+
+Catálogo utiliza una **base de datos independiente**, administrada mediante migraciones Flyway. El esquema incluye categorías, publicaciones, disponibilidades e imágenes; no replica tablas de otros microservicios.
+
+## Requisitos
+
+- Java 21 y Maven Wrapper; los ejemplos siguientes usan Windows PowerShell.
+- **Docker Desktop instalado y abierto**, con Docker Engine activo.
+- Puertos libres: MySQL local **3308** y aplicación Spring Boot **8082**.
+
+## 1. Obtener cambios
+
+En la raíz del repositorio:
+
+```powershell
+git switch develop
+git pull origin develop
+```
+
+## 2. Preparar secretos locales (NO subir a Git)
+
+Crear un archivo **.env** en la raíz a partir del ejemplo:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Configurar `.env` con valores distintos y suficientemente fuertes para
+`DB_PASSWORD` y `MYSQL_ROOT_PASSWORD`, manteniendo `DB_USERNAME=lendup_catalogo`.
+, debe evitarse la interpolación no deseada de Docker Compose.
 
 Comprueba sin imprimir contraseñas:
 
@@ -43,7 +71,7 @@ Debe aparecer `!! .env` (ignorado).
 Al ejecutar Spring localmente debe establecerse `$env:DB_PASSWORD`
 en la misma terminal.
 
-## 3. Iniciar MySQL con Docker Desktop abierto
+## 3. Iniciar MySQL
 
 ```powershell
 docker compose version
@@ -55,7 +83,7 @@ Verifica que `mysql` esté marcado como `healthy` en `docker compose ps`.
 Si el puerto 3308 está ocupado, modificar tanto Docker Compose como
 `spring.datasource.url` (o establecer `DB_URL`).
 
-## 4. Iniciar Catálogo para que Flyway migre la base
+## 4. Iniciar Catálogo y aplicar migraciones
 
 Verificación del entorno:
 
@@ -64,8 +92,8 @@ java -version
 .\mvnw.cmd -version
 ```
 
-Ambos deben utilizar Java 21. Antes de iniciar la aplicación configura la contraseña
-**de usuario**, la misma que está en `.env` bajo `DB_PASSWORD`:
+Java debe corresponder a la versión 21. La aplicación requiere la contraseña
+**del usuario de MySQL**, definida en `.env` como `DB_PASSWORD`:
 
 ```powershell
 $env:DB_PASSWORD = Read-Host "Introduce DB_PASSWORD del archivo .env"
@@ -77,9 +105,7 @@ No utilizar `MYSQL_ROOT_PASSWORD` para la conexión de la aplicación. La conexi
 que Flyway aplicó la migración `V1` o que el esquema ya está actualizado.
 El servicio escucha en **http://localhost:8082**.
 
-El arranque puede mostrar una contraseña temporal autogenerada por Spring Security;
-no forma parte del mecanismo Firebase del servicio. En esta etapa inicial
-la API REST aún no estaba incluida; fue añadida posteriormente.
+La seguridad HTTP utiliza Firebase cuando `CATALOGO_FIREBASE_ENABLED=true`; la configuración de autenticación se documenta en [Firebase e Identidad](auth-identity.md).
 
 ## 5. Comprobar Flyway y tablas (segunda terminal PowerShell)
 
@@ -124,8 +150,7 @@ del volumen `catalog-mysql-data`.
 
 ## Pruebas y errores conocidos
 
-- Durante el paso 4 aún no se habían incluido entidades JPA; actualmente se
-  encuentran implementadas. Flyway requiere MySQL activo.
+- Flyway requiere MySQL activo y Hibernate valida que las entidades JPA coincidan con el esquema.
 - Las pruebas de dominio pueden ejecutarse sin MySQL seleccionando explícitamente
   las clases de test. El `@SpringBootTest` generado sí requiere una base/configuración
   de pruebas; las pruebas de integración ya están implementadas.
