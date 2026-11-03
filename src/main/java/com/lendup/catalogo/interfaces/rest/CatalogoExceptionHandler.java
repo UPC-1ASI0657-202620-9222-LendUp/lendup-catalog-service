@@ -1,6 +1,7 @@
 package com.lendup.catalogo.interfaces.rest;
 
 import com.lendup.catalogo.application.exception.AccesoDenegadoException;
+import com.lendup.catalogo.application.exception.AlmacenamientoImagenNoDisponibleException;
 import com.lendup.catalogo.application.exception.RecursoNoEncontradoException;
 import com.lendup.catalogo.domain.model.DisponibilidadSuperpuestaException;
 import com.lendup.catalogo.interfaces.rest.dto.ApiError;
@@ -30,6 +31,12 @@ public class CatalogoExceptionHandler {
     @ExceptionHandler(DisponibilidadSuperpuestaException.class)
     public ResponseEntity<ApiError> conflicto(DisponibilidadSuperpuestaException ex) {
         return respuesta(HttpStatus.CONFLICT, "DISPONIBILIDAD_SUPERPUESTA", ex.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(AlmacenamientoImagenNoDisponibleException.class)
+    public ResponseEntity<ApiError> sinCloudinary(AlmacenamientoImagenNoDisponibleException ex) {
+        return respuesta(HttpStatus.SERVICE_UNAVAILABLE, "ALMACENAMIENTO_NO_DISPONIBLE",
+                ex.getMessage(), Map.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

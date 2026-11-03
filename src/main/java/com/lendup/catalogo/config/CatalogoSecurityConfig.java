@@ -63,7 +63,8 @@ public class CatalogoSecurityConfig {
                                 "/api/v1/catalogo/categorias",
                                 "/api/v1/catalogo/categorias/{id}",
                                 "/api/v1/catalogo/publicaciones",
-                                "/api/v1/catalogo/publicaciones/{id}").permitAll()
+                                "/api/v1/catalogo/publicaciones/{id}",
+                                "/api/v1/catalogo/publicaciones/{id}/imagenes").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(new FirebaseCatalogoAuthenticationFilter(verificadores, identidades),
                         UsernamePasswordAuthenticationFilter.class)

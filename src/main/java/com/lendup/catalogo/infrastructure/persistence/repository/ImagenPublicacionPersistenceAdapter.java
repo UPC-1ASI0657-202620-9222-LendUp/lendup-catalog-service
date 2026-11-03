@@ -28,6 +28,7 @@ public class ImagenPublicacionPersistenceAdapter implements ImagenPublicacionPer
         } else {
             repository.save(new ImagenPublicacionEntity(imagen));
         }
+        repository.flush();
         return imagen;
     }
 

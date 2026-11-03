@@ -42,7 +42,8 @@ public class FirebaseCatalogoAuthenticationFilter extends OncePerRequestFilter {
                 || ruta.equals("/api/v1/catalogo/categorias")
                 || ruta.matches("/api/v1/catalogo/categorias/[^/]+")
                 || ruta.equals("/api/v1/catalogo/publicaciones")
-                || ruta.matches("/api/v1/catalogo/publicaciones/[^/]+");
+                || ruta.matches("/api/v1/catalogo/publicaciones/[^/]+")
+                || ruta.matches("/api/v1/catalogo/publicaciones/[^/]+/imagenes");
     }
 
     @Override

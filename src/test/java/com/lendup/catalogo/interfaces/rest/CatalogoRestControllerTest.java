@@ -50,7 +50,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /** Verifica los controladores con Spring MVC, Jackson 3 y filtros de seguridad activos. */
 @WebMvcTest(controllers = {CategoriaController.class, PublicacionController.class,
-        DisponibilidadController.class})
+        DisponibilidadController.class, ImagenPublicacionController.class})
 @Import({CatalogoSecurityConfig.class, UsuarioActual.class,
         ParchePublicacion.class, CatalogoExceptionHandler.class})
 class CatalogoRestControllerTest {
@@ -60,6 +60,7 @@ class CatalogoRestControllerTest {
     @MockitoBean private ConsultarPublicacionesUseCase consultas;
     @MockitoBean private ConsultarCategoriasUseCase categorias;
     @MockitoBean private GestionarDisponibilidadUseCase disponibilidad;
+    @MockitoBean private com.lendup.catalogo.application.port.in.GestionarImagenesUseCase gestionImagenes;
     @MockitoBean private FirebaseTokenVerifier firebaseVerificador;
     @MockitoBean private IdentidadUsuarioPort identidadUsuarios;
 

@@ -21,6 +21,11 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
 management:
   endpoint:
     health:
@@ -37,9 +42,16 @@ catalogo:
   security:
     firebase-enabled: ${CATALOGO_FIREBASE_ENABLED:false}
     cors-origins: ${CORS_ORIGINS:http://localhost:5173}
+  cloudinary:
+    enabled: ${CLOUDINARY_ENABLED:false}
 
 firebase:
   project-id: ${FIREBASE_PROJECT_ID:}
 
 identity:
   base-url: ${IDENTITY_BASE_URL:}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
