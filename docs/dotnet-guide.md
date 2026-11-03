@@ -71,18 +71,18 @@ Invoke-RestMethod "$base/publicaciones/$publicacionId/disponibilidades" -Method 
 
 Swagger: /swagger-ui/index.html. OpenAPI: /v3/api-docs (alias redirige a /v3/api-docs/v1). Salud: /actuator/health y /health; comprueba MySQL. Redis no determina salud del servicio ni bloquea lecturas cuando falla. Logs JSON sin tokens ni contraseñas.
 
-## EF Core, Flyway y reversión
+## EF Core, Flyway, categorías iniciales y reversión
 
 El contexto mapea CHAR(36) como strings en persistencia y Guid en dominio; DECIMAL(12,2) dinero, DECIMAL(9,6) coordenadas, DATETIME(6), textos y nombres V1. La conexión usa OldGuids=true para impedir la interpretación automática de CHAR(36) como Guid por MySql.Data; todos los UUID están mapeados explícitamente como texto de longitud fija y no se usan columnas binarias. No hay FK a Identidad/Reservas. No hay EnsureCreated, EnsureDeleted ni migraciones automáticas.
 
-Para una base vacía ejecutar Flyway 11.14.1 con `src/LendUp.Catalogo.Infrastructure/Database/Migrations` como ubicación y credenciales en variables/configuración privada. V1 permanece intacta. El helper exige inspección vacía y rechaza cualquier tabla existente:
+Para una base vacía ejecutar Flyway 11.14.1 con `src/LendUp.Catalogo.Infrastructure/Database/Migrations` como ubicación y credenciales en variables/configuración privada. V1 permanece intacta; V2 inserta ocho categorías iniciales con UUID/códigos fijos mediante INSERT IGNORE. Revisar estos nombres de categorías con el equipo de producto antes del lanzamiento. Flyway aplica ambas versiones en instalaciones nuevas y sólo V2 donde V1 ya esté registrada. El helper exige inspección vacía y rechaza cualquier tabla existente:
 
 ```powershell
 $mysqlContainer = docker compose ps -q mysql
 ./scripts/initialize-empty-database.ps1 -MySqlContainer $mysqlContainer
 ```
 
-Ejecutarlo sólo para una instalación nueva, tras cargar DB_USERNAME/DB_PASSWORD; el contenedor Flyway comparte la red del MySQL seleccionado y recibe secretos únicamente por entorno. Para una base existente conservar flyway_schema_history y comprobar columnas/índices contra V1 antes del despliegue. No aplicar V1 manualmente sobre tablas existentes. Las pruebas ejecutan V1 únicamente dentro de una base efímera nueva.
+Ejecutarlo sólo para una instalación nueva, tras cargar DB_USERNAME/DB_PASSWORD; el contenedor Flyway comparte la red del MySQL seleccionado y recibe secretos únicamente por entorno. Para una base existente conservar flyway_schema_history, comprobar columnas/índices contra V1 y ejecutar Flyway migrate desde un job controlado para aplicar V2 cuando corresponda. El helper es exclusivamente para bases vacías, no para RDS con datos existentes. No aplicar V1 manualmente sobre tablas existentes. Las pruebas ejecutan V1 únicamente dentro de una base efímera nueva.
 
 Antes de cualquier cambio futuro: respaldo mysqldump --single-transaction con archivo de opciones privado (sin contraseña en argumentos), restauración de ensayo en base separada, migración incremental revisada y plan de reversión. Esta implementación no modifica el esquema. Para rollback detener el servicio y desplegar la versión anterior compatible con el esquema, con un único escritor. Nunca ejecutar docker compose down -v ni eliminar volúmenes de datos.
 
