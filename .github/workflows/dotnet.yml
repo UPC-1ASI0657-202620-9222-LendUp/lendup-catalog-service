@@ -1,9 +1,9 @@
 name: Catalogo .NET
 on:
   push:
-    branches: [develop, feat/catalogo-aspnetcore-redis]
+    branches: [develop, main]
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
 permissions:
   contents: read
 jobs:
@@ -23,3 +23,11 @@ jobs:
         with:
           name: test-results
           path: TestResults
+
+  docker-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production Docker image
+        run: docker build -t lendup-catalog-service:ci .
