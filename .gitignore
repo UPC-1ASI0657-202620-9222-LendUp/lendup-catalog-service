@@ -39,3 +39,11 @@ build/
 .secrets/
 *.local.yaml
 *.local.yml
+
+# .NET build and test artifacts
+**/bin/
+**/obj/
+TestResults/
+*.user
+*.suo
+
