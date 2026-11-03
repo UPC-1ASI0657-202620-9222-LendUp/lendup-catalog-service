@@ -11,9 +11,12 @@ Microservicio de Catálogo de LendUp (Java 21, Spring Boot 4, MySQL 8.4).
   `GET /api/v1/estudiantes/me`, validación del UUID interno, permisos
   de propietario y pruebas de seguridad; 82 pruebas aprobadas en Windows.**
 
-- **Paso 9: endpoints Cloudinary y gestión de fotos; pendiente de pruebas locales.**
+- **Paso 9: Cloudinary e imágenes; 96 pruebas aprobadas y arranque local exitoso.**
+- **Paso 10: Swagger/OpenAPI interactivo; pendiente de validación local.**
 
 ## Documentación
+
+- [Paso 10: OpenAPI y Swagger](docs/openapi.md)
 
 - [Paso 9: Cloudinary](docs/cloudinary.md)
 - [Paso 8: Firebase e Identidad](docs/auth-identity.md)
