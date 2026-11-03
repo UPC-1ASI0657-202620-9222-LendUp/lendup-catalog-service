@@ -129,11 +129,22 @@ public sealed class CatalogoDbContext(DbContextOptions<CatalogoDbContext> option
         pbl.HasIndex(x => new { x.Estado, x.CategoriaId, x.Universidad, x.Campus }).HasDatabaseName("idx_publicaciones_1");
         m.Entity<DisponibilidadRow>().HasOne<PublicacionRow>().WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
         m.Entity<DisponibilidadRow>().HasIndex(x => new { x.PublicacionId, x.Desde, x.Hasta }).HasDatabaseName("idx_disponibilidades_publicacion_0");
+        foreach (var name in new[] { nameof(DisponibilidadRow.Desde), nameof(DisponibilidadRow.Hasta) })
+            m.Entity<DisponibilidadRow>().Property<DateTime>(name).HasPrecision(6)
+                .HasConversion(value => FechaLocalMySql.ParaGuardar(value),
+                    value => DateTime.SpecifyKind(value, DateTimeKind.Unspecified));
         m.Entity<ImagenRow>().Property(x => x.CloudinaryPublicId).HasColumnType("varchar(255)");
         m.Entity<ImagenRow>().HasOne<PublicacionRow>().WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
         m.Entity<ImagenRow>().HasIndex(x => new { x.PublicacionId, x.Orden }).IsUnique().HasDatabaseName("uq_imagenes_publicacion_0");
         m.Entity<ImagenRow>().HasIndex(x => x.PublicacionId).HasDatabaseName("idx_imagenes_publicacion_0");
     }
+}
+
+public static class FechaLocalMySql
+{
+    public static DateTime ParaGuardar(DateTime value)
+        => value.Kind == DateTimeKind.Unspecified ? value
+            : throw new ArgumentException("DATETIME de negocio requiere DateTimeKind.Unspecified");
 }
 
 public sealed class CatalogoRepository(CatalogoDbContext db) : ICatalogoRepository

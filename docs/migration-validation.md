@@ -1,3 +1,5 @@
+> Actualización: la semántica histórica quedó resuelta. Se conserva el literal MySQL. Véase [la verificación de fechas](datetime-semantics.md). El texto original a continuación documenta el estado previo.
+
 # Validación de migración Java / ASP.NET Core
 
 ## Resultado y condición de cambio
@@ -96,4 +98,3 @@ Base /api/v1/catalogo. La suite FlujoDeLos16Endpoints ejecuta los 16 métodos/ru
 `scripts/compare-contracts.ps1` compara JSON normalizado sin alterar arrays ni fechas. Requiere servicios de prueba con bases separadas restauradas del mismo fixture y UUID explícitos. No usa datos personales por defecto. Para Java UTC configurar -Duser.timezone=UTC; para reproducir la divergencia usar la zona real de la JVM de referencia. No normalizar ni ignorar fechas en el comparador.
 
 Ver dotnet-guide.md para inicio en Windows, preservación de Flyway V1, secretos y rollback. Etapa I permanece pendiente hasta resolver el primer punto.
-

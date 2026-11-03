@@ -92,7 +92,7 @@ public sealed class Fixture : IAsyncLifetime
     }
 }
 
-public class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITestOutputHelper output) : IClassFixture<Fixture>
+public partial class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITestOutputHelper output) : IClassFixture<Fixture>
 {
     private const string Base = "/api/v1/catalogo";
     private object Solicitud(string titulo = "Cámara") => new

@@ -1,3 +1,5 @@
+> Actualización: la semántica histórica quedó resuelta. Se conserva el literal MySQL. Véase [la verificación de fechas](docs/datetime-semantics.md). El texto original a continuación documenta el estado previo.
+
 # LendUp Catálogo
 
 Microservicio de categorías, publicaciones, disponibilidad ofrecida e imágenes. La solución ASP.NET Core 10 usa DDD, EF Core/MySQL 8.4, Redis, Firebase/Identidad y Cloudinary.
