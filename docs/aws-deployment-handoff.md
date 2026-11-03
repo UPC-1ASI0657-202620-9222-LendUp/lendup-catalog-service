@@ -34,6 +34,14 @@ El valor por defecto de `IDENTITY_BASE_URL` sólo sirve en desarrollo. El códig
 - El helper de PowerShell `scripts/initialize-empty-database.ps1` está pensado sólo para un contenedor local vacío; **no** se debe ejecutar sobre un RDS existente.
 - Revisar y aprobar la taxonomía de categorías con el equipo de producto antes de ir a producción.
 
+## API Gateway e Identidad privada
+
+- En el Gateway establecer `CATALOG_SERVICE_URL` con la URL **base privada** de Catálogo (sin `/api/v1/catalogo`); sin esta variable, las peticiones seguirían llegando al monolito.
+- El Gateway debe conservar `Authorization` y no reescribir las rutas; Catálogo sigue verificando Firebase por sí mismo.
+- `IDENTITY_BASE_URL` se usa internamente de Catálogo a Identidad y requiere HTTPS en producción; un nombre interno HTTP de ECS será rechazado. Configurar TLS interno (por ejemplo, ALB privado HTTPS) además de la ruta pública del Gateway.
+- En desarrollo local, Reservas y Pagos utilizan los mismos puertos 8081/8082 que Identidad y Catálogo por defecto. Usar puertos de host distintos (8085/8084) o DNS de contenedores separados.
+- [Contrato completo, configuración local y smoke tests](api-gateway-integration.md).
+
 ## Orden de despliegue y smoke tests
 1. Provisionar RDS privado, credenciales separadas, conectividad y reglas de Security Group.
 2. Aplicar migraciones Flyway y comprobar que la tabla `categorias` tiene datos.

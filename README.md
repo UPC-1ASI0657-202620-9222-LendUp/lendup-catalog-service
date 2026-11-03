@@ -28,6 +28,7 @@ dotnet test --configuration Release
 docker compose --profile dotnet build api
 ```
 
+- [Integración con API Gateway e Identidad: rutas, HTTPS y pruebas de humo](docs/api-gateway-integration.md)
 - [Guía de entrega para AWS y variables de producción](docs/aws-deployment-handoff.md)
 - [Arquitectura, configuración, seguridad y operación](docs/dotnet-guide.md)
 - [Contratos REST](docs/rest-api.md)
