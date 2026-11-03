@@ -128,7 +128,8 @@ class FirebaseCatalogoAuthenticationFilterTest {
                 .doFilter(req, res, (a,b) -> fail("No debe pasar"));
         assertEquals(403, res.getStatus());
 
-        when(identidad.resolverUsuario("uid", "ok")).thenThrow(new IdentidadNoDisponibleException());
+        // doThrow no invoca el stub previo, que en este punto lanza IdentidadNoRegistradaException.
+        doThrow(new IdentidadNoDisponibleException()).when(identidad).resolverUsuario("uid", "ok");
         var second = new MockHttpServletResponse();
         new FirebaseCatalogoAuthenticationFilter(verificadorProvider, identidadProvider)
                 .doFilter(solicitud("POST", "/api/v1/catalogo/publicaciones", "Bearer ok"),
