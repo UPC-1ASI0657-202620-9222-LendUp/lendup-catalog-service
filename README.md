@@ -1,35 +1,34 @@
-# lendup-catalog-service
+# LendUp Catálogo
 
-Microservicio de Catálogo de LendUp, desarrollado con Java 21, Spring Boot 4, MySQL 8.4 y arquitectura orientada al dominio (DDD).
+Microservicio de categorías, publicaciones, disponibilidad ofrecida e imágenes. Usa C#, ASP.NET Core 10, EF Core 10 con MySQL 8.4 y Redis. Firebase autentica al estudiante, Identidad resuelve su UUID interno y Cloudinary almacena imágenes.
 
-## Funcionalidades
+La solución LendUp.Catalogo.sln contiene Domain, Application, Infrastructure y Api bajo src, con cuatro proyectos correspondientes bajo tests. Infrastructure contiene el SQL V1 original en Database/Migrations.
 
-- Gestión de categorías, publicaciones y disponibilidad ofrecida, con reglas de negocio y persistencia mediante JPA y Flyway.
-- API REST con validación, actualizaciones parciales, control de estados y permisos del propietario.
-- Autenticación con Firebase Admin y resolución del UUID interno mediante el microservicio de Identidad.
-- Adaptador de almacenamiento de imágenes en Cloudinary y documentación OpenAPI/Swagger.
-- Pruebas automatizadas de dominio, aplicación, persistencia, API y seguridad. Referencia de verificación local: 97 pruebas aprobadas.
+## Inicio local
 
-## Documentación
+Instala .NET SDK 10 y Docker. Crea .env desde .env.example si aún no existe y configura las credenciales locales.
 
-- [Arquitectura y límites del contexto](docs/architecture.md)
-- [Modelo de dominio](docs/domain-model.md)
-- [Casos de uso](docs/use-cases.md)
-- [MySQL y migraciones Flyway](docs/database-setup.md)
-- [Persistencia JPA](docs/persistence.md)
-- [API REST](docs/rest-api.md)
-- [Firebase e integración con Identidad](docs/auth-identity.md)
-- [Imágenes y Cloudinary](docs/cloudinary.md)
-- [OpenAPI y Swagger](docs/openapi.md)
+```powershell
+docker compose up -d mysql redis
+Get-Content .env | ForEach-Object {
+    if ($_ -match '^([A-Z][A-Z0-9_]*)=(.*)$') {
+        [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2], 'Process')
+    }
+}
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+dotnet run --project src/LendUp.Catalogo.Api --no-launch-profile
+```
 
-## Configuración local
+Para una base vacía, ejecuta primero el inicializador indicado en la guía. La API escucha en 8082, MySQL en 3308, Redis en 6379 e Identidad en 8081. Swagger está en /swagger-ui/index.html y salud en /actuator/health.
 
-- API: `http://localhost:8082/api/v1/catalogo`.
-- MySQL de Catálogo: `127.0.0.1:3308`.
-- La autenticación está deshabilitada por defecto (`CATALOGO_FIREBASE_ENABLED=false`). Para activar las rutas protegidas se requieren credenciales válidas de Firebase e `IDENTITY_BASE_URL`.
-- Los endpoints protegidos obtienen la identidad del token verificado; no aceptan identificadores de propietario proporcionados por el cliente.
-- Los archivos `.env`, las credenciales de servicio y los tokens deben permanecer fuera del control de versiones.
+```powershell
+dotnet restore
+dotnet build --configuration Release
+dotnet test --configuration Release
+docker compose --profile dotnet build api
+```
 
-## Integraciones
-
-La comunicación HTTP con Identidad y el acceso autenticado a publicaciones se han verificado en un entorno local. Permanecen pendientes de validación extremo a extremo la subida y eliminación de imágenes con Cloudinary y el contrato de ocupación efectiva con Reservas. Cada microservicio conserva su propia base de datos.
+- [Arquitectura, configuración, seguridad y operación](docs/dotnet-guide.md)
+- [Contratos REST](docs/rest-api.md)
+- [Fechas locales y DATETIME(6)](docs/datetime-semantics.md)
+- [Rendimiento y Redis](docs/performance.md)
