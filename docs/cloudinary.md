@@ -5,13 +5,15 @@ conserva `cloudinary_public_id`, `url` y `orden`.
 
 ## Configuración en Windows PowerShell
 
-En Cloudinary Dashboard > **Go to API Keys** consulta los valores en tu cuenta
-(sin enviarlos por chat, sin copiarlos al repositorio):
+Las credenciales de la cuenta se obtienen en Cloudinary Dashboard >
+**Go to API Keys**. Deben permanecer fuera del repositorio y de los registros públicos:
 
 ```powershell
 $env:CLOUDINARY_CLOUD_NAME = "dpdvrso6b"
 $env:CLOUDINARY_API_KEY = Read-Host "Cloudinary API Key"
-$env:CLOUDINARY_API_SECRET = Read-Host "Cloudinary API Secret"
+$secreto = Read-Host "Cloudinary API Secret" -AsSecureString
+$env:CLOUDINARY_API_SECRET = [System.Net.NetworkCredential]::new("", $secreto).Password
+Remove-Variable secreto
 $env:CLOUDINARY_ENABLED = "true"
 ```
 
@@ -39,6 +41,7 @@ Si falla la persistencia MySQL tras subir el archivo, se intenta eliminar
 el recurso de Cloudinary. Esto es best-effort: para producción, los errores
 de compensación y las eliminaciones parciales requieren conciliación y reintentos.
 
-Las pruebas unitarias/MockMvc usan mocks y no utilizan créditos de tu cuenta.
+Las pruebas unitarias/MockMvc usan mocks y no consumen créditos de Cloudinary.
+La suite completa aprobada en desarrollo local consta de 97 pruebas.
 La prueba real de POST necesita configurar tanto Cloudinary como
 Firebase e Identidad. Nunca subir `.env`, `.secrets/` ni API secrets.
