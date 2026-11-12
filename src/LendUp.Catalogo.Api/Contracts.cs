@@ -13,6 +13,28 @@ public sealed record PublicacionResponse(Guid Id, Guid PropietarioUsuarioId, Det
     public static PublicacionResponse De(Publicacion p) => new(p.Id, p.PropietarioUsuarioId, p.Detalles, p.Condiciones,
         p.Estado, p.Disponibilidades.Select(DisponibilidadResponse.De).ToArray());
 }
+/// <summary>Flat snake_case shape required by Reservations, independent of public JSON camelCase.</summary>
+public sealed record SnapshotResponse(
+    [property: JsonPropertyName("id")] Guid Id,
+    [property: JsonPropertyName("propietario_usuario_id")] Guid PropietarioUsuarioId,
+    [property: JsonPropertyName("estado")] string Estado,
+    [property: JsonPropertyName("periodo_ofrecido")] bool PeriodoOfrecido,
+    [property: JsonPropertyName("snapshot_id")] string SnapshotId,
+    [property: JsonPropertyName("snapshot_hash")] string SnapshotHash,
+    [property: JsonPropertyName("tarifa_diaria")] decimal TarifaDiaria,
+    [property: JsonPropertyName("garantia_monetaria")] decimal? GarantiaMonetaria,
+    [property: JsonPropertyName("moneda")] string Moneda,
+    [property: JsonPropertyName("lugar_intercambio")] string LugarIntercambio,
+    [property: JsonPropertyName("condiciones_uso")] string CondicionesUso,
+    [property: JsonPropertyName("condiciones_entrega")] string CondicionesEntrega,
+    [property: JsonPropertyName("condiciones_devolucion")] string CondicionesDevolucion,
+    [property: JsonPropertyName("condiciones_cancelacion")] string CondicionesCancelacion)
+{
+    public static SnapshotResponse De(LendUp.Catalogo.Application.SnapshotPublicacion s)
+        => new(s.Id, s.PropietarioUsuarioId, s.Estado, s.PeriodoOfrecido, s.SnapshotId, s.SnapshotHash,
+            s.TarifaDiaria, s.GarantiaMonetaria, s.Moneda, s.LugarIntercambio, s.CondicionesUso,
+            s.CondicionesEntrega, s.CondicionesDevolucion, s.CondicionesCancelacion);
+}
 public sealed record ImagenResponse(Guid Id, Guid PublicacionId, string Url, int Orden)
 {
     public static ImagenResponse De(ImagenPublicacion i) => new(i.Id, i.PublicacionId, i.Url, i.Orden);
@@ -52,7 +74,7 @@ public static class Solicitudes
             && estado.ToString() == texto ? estado : throw new ReglaDominioException("Estado inválido");
     public static DateTime Fecha(string texto)
     {
-        if (!DateTime.TryParseExact(texto, new[] { "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF" },
+        if (!DateTime.TryParseExact(texto, new[] { "yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF" }new[] { "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF" },
             CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha)) throw new ReglaDominioException("Fecha local inválida, sin zona horaria");
         return DateTime.SpecifyKind(fecha, DateTimeKind.Unspecified);
     }

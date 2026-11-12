@@ -19,6 +19,11 @@ public sealed class CatalogoController(CatalogoService service) : ControllerBase
             desde is null ? null : Solicitudes.Fecha(desde), hasta is null ? null : Solicitudes.Fecha(hasta)), ct)).Select(PublicacionResponse.De));
     [AllowAnonymous, HttpGet("publicaciones/{id}")]
     public async Task<IActionResult> Publicacion(string id, CancellationToken ct) => Ok(PublicacionResponse.De(await service.Publica(Solicitudes.Uuid(id), ct)));
+    [AllowAnonymous, HttpGet("publicaciones/{id}/snapshot")]
+    public async Task<IActionResult> SnapshotPublico(string id, [FromQuery] string desde,
+        [FromQuery] string hasta, CancellationToken ct)
+        => Ok(SnapshotResponse.De(await service.Snapshot(
+            Solicitudes.Uuid(id), new(Solicitudes.Fecha(desde), Solicitudes.Fecha(hasta)), publico: true, ct)));
     [HttpGet("mis-publicaciones")]
     public async Task<IActionResult> Propias(CancellationToken ct) => Ok((await service.Propias(Actor, ct)).Select(PublicacionResponse.De));
     [HttpPost("publicaciones")]

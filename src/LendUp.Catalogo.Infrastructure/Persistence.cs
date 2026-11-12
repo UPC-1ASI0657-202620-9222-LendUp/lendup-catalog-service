@@ -81,18 +81,29 @@ public sealed class ImagenRow
     public ImagenPublicacion Dominio() => new(Guid.Parse(Id), Guid.Parse(PublicacionId), CloudinaryPublicId, Url, Orden);
 }
 
+public sealed class SnapshotRow
+{
+    public string Id { get; set; } = "";
+    public string PublicacionId { get; set; } = "";
+    public string SnapshotHash { get; set; } = "";
+    public string SnapshotJson { get; set; } = "";
+    public DateTime CreadoEn { get; set; }
+}
+
 public sealed class CatalogoDbContext(DbContextOptions<CatalogoDbContext> options) : DbContext(options)
 {
     public DbSet<CategoriaRow> Categorias => Set<CategoriaRow>();
     public DbSet<PublicacionRow> Publicaciones => Set<PublicacionRow>();
     public DbSet<DisponibilidadRow> Disponibilidades => Set<DisponibilidadRow>();
     public DbSet<ImagenRow> Imagenes => Set<ImagenRow>();
+    public DbSet<SnapshotRow> Snapshots => Set<SnapshotRow>();
     protected override void OnModelCreating(ModelBuilder m)
     {
         m.Entity<CategoriaRow>().ToTable("categorias");
         m.Entity<PublicacionRow>().ToTable("publicaciones");
         m.Entity<DisponibilidadRow>().ToTable("disponibilidades_publicacion");
         m.Entity<ImagenRow>().ToTable("imagenes_publicacion");
+        m.Entity<SnapshotRow>().ToTable("snapshots_publicacion");
         foreach (var entity in m.Model.GetEntityTypes())
         {
             foreach (var p in entity.GetProperties())
@@ -137,6 +148,13 @@ public sealed class CatalogoDbContext(DbContextOptions<CatalogoDbContext> option
         m.Entity<ImagenRow>().HasOne<PublicacionRow>().WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
         m.Entity<ImagenRow>().HasIndex(x => new { x.PublicacionId, x.Orden }).IsUnique().HasDatabaseName("uq_imagenes_publicacion_0");
         m.Entity<ImagenRow>().HasIndex(x => x.PublicacionId).HasDatabaseName("idx_imagenes_publicacion_0");
+
+        var sn = m.Entity<SnapshotRow>();
+        sn.Property(x => x.Id).HasColumnType("varchar(70)").HasMaxLength(70).IsFixedLength(false);
+        sn.Property(x => x.SnapshotHash).HasColumnType("char(64)");
+        sn.Property(x => x.SnapshotJson).HasColumnType("longtext");
+        sn.HasOne<PublicacionRow>().WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
+        sn.HasIndex(x => x.PublicacionId).HasDatabaseName("idx_snapshots_publicacion_0");
     }
 }
 
@@ -179,6 +197,34 @@ public sealed class CatalogoRepository(CatalogoDbContext db) : ICatalogoReposito
             .OrderBy(d => d.Desde).ThenBy(d => d.Id).ToListAsync(ct)).ToLookup(d => d.PublicacionId);
         return rows.Select(p => p.Dominio(slots[p.Id])).ToArray();
     }
+    public async Task<SnapshotPublicacion> Snapshot(Guid id, PeriodoDisponibilidad periodo, bool publico, CancellationToken ct)
+    {
+        // The parent row lock serializes snapshot reads with any edit of the offer and its slots.
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
+        var rows = await db.Publicaciones.AsNoTracking()
+            .FromSqlInterpolated($"SELECT * FROM publicaciones WHERE id = {id.ToString()} FOR UPDATE").ToListAsync(ct);
+        var row = rows.SingleOrDefault() ?? throw CatalogoException.NoEncontrado();
+        var categoriaActiva = await db.Categorias.AsNoTracking()
+            .AnyAsync(c => c.Id == row.CategoriaId && c.Activa, ct);
+        if (publico && (row.Estado != "ACTIVA" || !categoriaActiva)) throw CatalogoException.NoEncontrado();
+        var slots = await db.Disponibilidades.AsNoTracking()
+            .Where(d => d.PublicacionId == row.Id).OrderBy(d => d.Desde).ThenBy(d => d.Id).ToListAsync(ct);
+        var publicacion = row.Dominio(slots);
+        var (snapshot, canonicalJson) = SnapshotPublicacionFactory.Crear(publicacion, row.ActualizadoEn, categoriaActiva, periodo);
+        if (!await db.Snapshots.AsNoTracking().AnyAsync(x => x.Id == snapshot.SnapshotId, ct))
+        {
+            db.Snapshots.Add(new SnapshotRow
+            {
+                Id = snapshot.SnapshotId, PublicacionId = row.Id,
+                SnapshotHash = snapshot.SnapshotHash, SnapshotJson = canonicalJson,
+                CreadoEn = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync(ct);
+        }
+        await tx.CommitAsync(ct);
+        return snapshot;
+    }
+
     public async Task Crear(Publicacion p, CancellationToken ct)
     {
         var row = new PublicacionRow { Id = p.Id.ToString(), PropietarioUsuarioId = p.PropietarioUsuarioId.ToString(), CreadoEn = DateTime.UtcNow };

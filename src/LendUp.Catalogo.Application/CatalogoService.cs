@@ -39,6 +39,7 @@ public interface ICatalogoRepository
     Task<IReadOnlyList<ImagenPublicacion>> Imagenes(Guid publicacionId, CancellationToken ct);
     Task AgregarImagen(ImagenPublicacion imagen, CancellationToken ct);
     Task EliminarImagen(ImagenPublicacion imagen, CancellationToken ct);
+    Task<SnapshotPublicacion> Snapshot(Guid id, PeriodoDisponibilidad periodo, bool publico, CancellationToken ct);
     // Durable cache generation derived from SQL metadata, including category visibility.
     Task<string> RevisionPublica(CancellationToken ct);
 }
@@ -79,6 +80,9 @@ public sealed class CatalogoService(ICatalogoRepository repo, ILecturaCache cach
         return await cache.Obtener($"publicacion:{id}:" + await repo.RevisionPublica(ct),
             async token => await repo.Obtener(id, token) ?? throw CatalogoException.NoEncontrado(), ct);
     }
+    // Snapshot is never served from Redis; it must read the current SQL revision atomically.
+    public Task<SnapshotPublicacion> Snapshot(Guid id, PeriodoDisponibilidad periodo, bool publico, CancellationToken ct)
+        => repo.Snapshot(id, periodo, publico, ct);
     public Task<IReadOnlyList<Publicacion>> Propias(Guid actor, CancellationToken ct) => repo.Propias(actor, ct);
     public async Task<Publicacion> Crear(Guid actor, DetallesPublicacion detalles, CondicionesPublicacion condiciones, CancellationToken ct)
     {

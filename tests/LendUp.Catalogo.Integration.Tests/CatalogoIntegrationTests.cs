@@ -34,6 +34,7 @@ public sealed class Fixture : IAsyncLifetime
         await using var conn = new MySqlConnection(Mysql.GetConnectionString()); await conn.OpenAsync();
         await new MySqlCommand(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"V1.sql")),conn).ExecuteNonQueryAsync();
         await new MySqlCommand(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"V2.sql")),conn).ExecuteNonQueryAsync();
+        await new MySqlCommand(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"V3.sql")),conn).ExecuteNonQueryAsync();
         var categoriesCount = Convert.ToInt32(await new MySqlCommand("SELECT COUNT(*) FROM categorias", conn).ExecuteScalarAsync());
         Assert.Equal(8, categoriesCount); // A fresh installation must have initial categories before any manual test seed.
         var insert = new MySqlCommand("INSERT INTO categorias(id,codigo,nombre,activa) VALUES(@id,'TEC','Tecnología',true)",conn);
@@ -53,7 +54,8 @@ public sealed class Fixture : IAsyncLifetime
             {
                 ["DB_HOST"] = cs.Server, ["DB_PORT"] = cs.Port.ToString(), ["DB_NAME"] = cs.Database,
                 ["DB_USERNAME"] = cs.UserID,["DB_PASSWORD"] = cs.Password,["REDIS_ENABLED"] = "true",
-                ["REDIS_CONNECTION"] = Redis.GetConnectionString()+",abortConnect=false",["REDIS_TTL_SECONDS"] = "2"
+                ["REDIS_CONNECTION"] = Redis.GetConnectionString()+",abortConnect=false",["REDIS_TTL_SECONDS"] = "2",
+                ["CATALOG_RESERVATIONS_SERVICE_TOKEN"] = new string('R', 48)["REDIS_CONNECTION"] = Redis.GetConnectionString()+",abortConnect=false",["REDIS_TTL_SECONDS"] = "2"
             }));
             b.ConfigureServices(s =>
             {
@@ -150,6 +152,81 @@ public partial class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITes
         Assert.Equal(HttpStatusCode.NoContent,(await f.Client.DeleteAsync(slotUrl)).StatusCode);
         Assert.Empty((await Json(url+"/disponibilidades")).EnumerateArray());
     }
+    [Fact]
+    public async Task SnapshotCompatibleConReservasYRegistroInmutable()
+    {
+        var publicationUrl = await Crear("Snapshot Reservas");
+        var id = publicationUrl.Split('/').Last();
+        var period = new { desde = "2026-12-16T09:00:00", hasta = "2026-12-16T12:00:00" };
+        var slot = await f.Client.PostAsJsonAsync(publicationUrl + "/disponibilidades", period);
+        Assert.Equal(HttpStatusCode.Created, slot.StatusCode);
+        var query = "?desde=" + period.desde + "&hasta=" + period.hasta;
+        using var publicClient = f.Factory.CreateClient();
+        var firstResponse = await publicClient.GetAsync(publicationUrl + "/snapshot" + query);
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        var first = await firstResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("ACTIVA", first.GetProperty("estado").GetString());
+        Assert.True(first.GetProperty("periodo_ofrecido").GetBoolean());
+        Assert.Equal(f.Actor.ToString(), first.GetProperty("propietario_usuario_id").GetString());
+        Assert.Equal(64, first.GetProperty("snapshot_hash").GetString()!.Length);
+        using var internalClient = f.Factory.CreateClient();
+        internalClient.DefaultRequestHeaders.Authorization = new("Bearer", new string('R', 48));
+        var internalUrl = $"/internal/v1/catalogo/publicaciones/{id}/snapshot" + query;
+        var privateResponse = await internalClient.GetAsync(internalUrl);
+        Assert.Equal(HttpStatusCode.OK, privateResponse.StatusCode);
+        var current = await privateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(first.GetProperty("snapshot_hash").GetString(), current.GetProperty("snapshot_hash").GetString());
+        Assert.Equal(first.GetProperty("snapshot_id").GetString(), current.GetProperty("snapshot_id").GetString());
+        Assert.Equal(25m, current.GetProperty("tarifa_diaria").GetDecimal());
+        using (var scope = f.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<CatalogoDbContext>();
+            Assert.Equal(1, await db.Snapshots.CountAsync(x => x.PublicacionId == id));
+        }
+        var changed = await f.Client.PatchAsJsonAsync(publicationUrl, new { condiciones = new { tarifaDiaria = 26m } });
+        Assert.Equal(HttpStatusCode.OK, changed.StatusCode);
+        var next = await (await publicClient.GetAsync(publicationUrl + "/snapshot" + query)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(first.GetProperty("snapshot_hash").GetString(), next.GetProperty("snapshot_hash").GetString());
+        Assert.Equal(26m, next.GetProperty("tarifa_diaria").GetDecimal());
+        using (var scope = f.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<CatalogoDbContext>();
+            Assert.Equal(2, await db.Snapshots.CountAsync(x => x.PublicacionId == id));
+            var oldId = first.GetProperty("snapshot_id").GetString();
+            var historic = await db.Snapshots.AsNoTracking().SingleAsync(x => x.Id == oldId);
+            Assert.Contains("\"tarifa_diaria\":25", historic.SnapshotJson);
+        }
+        // Java LocalDateTime.toString() can omit :ss when seconds are zero.
+        Assert.Equal(HttpStatusCode.OK, (await internalClient.GetAsync(
+            $"/internal/v1/catalogo/publicaciones/{id}/snapshot?desde=2026-12-16T09:00&hasta=2026-12-16T12:00")).StatusCode);
+    }
+
+    [Fact]
+    public async Task SnapshotInternoFallaCerradoYPeriodoNoOfrecidoSeRechaza()
+    {
+        var publicationUrl = await Crear("Snapshot protegido");
+        var id = publicationUrl.Split('/').Last();
+        var query = "?desde=2026-12-17T09:00:00&hasta=2026-12-17T10:00:00";
+        var internalUrl = $"/internal/v1/catalogo/publicaciones/{id}/snapshot" + query;
+        using var unauthenticated = f.Factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
+        unauthenticated.DefaultRequestHeaders.Authorization = new("Bearer", "owner");
+        Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
+        unauthenticated.DefaultRequestHeaders.Authorization = new("Bearer", new string('W', 48));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
+        using var reservations = f.Factory.CreateClient();
+        reservations.DefaultRequestHeaders.Authorization = new("Bearer", new string('R', 48));
+        var snapshot = await (await reservations.GetAsync(internalUrl)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(snapshot.GetProperty("periodo_ofrecido").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await reservations.GetAsync(
+            $"/internal/v1/catalogo/publicaciones/{id}/snapshot?desde=2026-12-17T09:00:00Z&hasta=2026-12-17T10:00:00")).StatusCode);
+        var paused = await f.Client.PatchAsJsonAsync(publicationUrl + "/estado", new { estado = "PAUSADA" });
+        Assert.Equal(HttpStatusCode.OK, paused.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await unauthenticated.GetAsync(publicationUrl + "/snapshot" + query)).StatusCode);
+        var inactiveSnapshot = await (await reservations.GetAsync(internalUrl)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("PAUSADA", inactiveSnapshot.GetProperty("estado").GetString());
+    }
+
     [Fact] public async Task DatosV1YFiltrosSQL()
     {
         using var scope = f.Factory.Services.CreateScope();

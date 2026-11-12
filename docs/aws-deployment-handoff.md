@@ -51,3 +51,7 @@ El valor por defecto de `IDENTITY_BASE_URL` sólo sirve en desarrollo. El códig
 6. Si se usa Redis, verificar latencia y fallos controlados. Activar logs/alertas, y comprobar CORS para el frontend real.
 
 CI comprueba build/tests y construcción del contenedor. El despliegue real con RDS/Firebase/Cloudinary y los health checks de ECS deben validarse en AWS antes de anunciar el servicio como operativo.
+
+## Snapshots y contratos con Reservas
+
+Migrar a **Flyway V3** `V3__create_catalog_snapshots.sql` antes de publicar la nueva imagen. Inyectar `CATALOG_RESERVATIONS_SERVICE_TOKEN` (32-512 caracteres aleatorios) mediante gestor de secretos y entregar el mismo valor a `CATALOG_SERVICE_TOKEN` de Reservas. Solo permitir el endpoint `/internal/v1/catalogo/**` en red privada TLS; no enrutarlo desde el Gateway público. Ver [contrato y variables](reservations-snapshot-integration.md).
