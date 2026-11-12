@@ -55,9 +55,15 @@ builder.Services.AddHttpClient<IIdentidadClient, IdentidadClient>(http =>
     catch (InvalidOperationException) { throw CatalogoException.Dependencia(); }
     http.Timeout = TimeSpan.FromSeconds(4);
 }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(3), AllowAutoRedirect = false });
-builder.Services.AddAuthentication("Firebase").AddScheme<AuthenticationSchemeOptions, FirebaseAuthentication>("Firebase", _ => { });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthentication("Firebase")
+    .AddScheme<AuthenticationSchemeOptions, FirebaseAuthentication>("Firebase", _ => { })
+    .AddScheme<AuthenticationSchemeOptions, CatalogoInternalAuthentication>(CatalogoInternalAuthentication.SchemeName, _ => { });
+builder.Services.AddAuthorization(options => options.AddPolicy("ReservationsOnly", policy => policy
+    .AddAuthenticationSchemes(CatalogoInternalAuthentication.SchemeName)
+    .RequireAuthenticatedUser()
+    .RequireClaim("service", "reservations")));
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.WithOrigins(Env("CORS_ORIGINS", "http://localhost:5173").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)).AllowAnyHeader().AllowAnyMethod()));
+builder.Services.AddScoped<InternalCatalogoController>();
 builder.Services.AddControllers().AddJsonOptions(o =>
 {
     o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));

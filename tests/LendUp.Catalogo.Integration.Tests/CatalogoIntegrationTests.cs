@@ -53,7 +53,8 @@ public sealed class Fixture : IAsyncLifetime
             {
                 ["DB_HOST"] = cs.Server, ["DB_PORT"] = cs.Port.ToString(), ["DB_NAME"] = cs.Database,
                 ["DB_USERNAME"] = cs.UserID,["DB_PASSWORD"] = cs.Password,["REDIS_ENABLED"] = "true",
-                ["REDIS_CONNECTION"] = Redis.GetConnectionString()+",abortConnect=false",["REDIS_TTL_SECONDS"] = "2"
+                ["REDIS_CONNECTION"] = Redis.GetConnectionString()+",abortConnect=false",["REDIS_TTL_SECONDS"] = "2",
+                ["CATALOG_RESERVATIONS_SERVICE_TOKEN"] = new string('R', 48)
             }));
             b.ConfigureServices(s =>
             {
@@ -150,6 +151,83 @@ public partial class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITes
         Assert.Equal(HttpStatusCode.NoContent,(await f.Client.DeleteAsync(slotUrl)).StatusCode);
         Assert.Empty((await Json(url+"/disponibilidades")).EnumerateArray());
     }
+    [Fact]
+    public async Task SnapshotCompatibleConReservasSinEfectosDeEscritura()
+    {
+        var publicationUrl = await Crear("Snapshot Reservas");
+        var id = publicationUrl.Split('/').Last();
+        var period = new { desde = "2026-12-16T09:00:00", hasta = "2026-12-16T12:00:00" };
+        var slot = await f.Client.PostAsJsonAsync(publicationUrl + "/disponibilidades", period);
+        Assert.Equal(HttpStatusCode.Created, slot.StatusCode);
+        var query = "?desde=" + period.desde + "&hasta=" + period.hasta;
+        using var publicClient = f.Factory.CreateClient();
+        var firstResponse = await publicClient.GetAsync(publicationUrl + "/snapshot" + query);
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        var first = await firstResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("ACTIVA", first.GetProperty("estado").GetString());
+        Assert.True(first.GetProperty("periodo_ofrecido").GetBoolean());
+        Assert.Equal(f.Actor.ToString(), first.GetProperty("propietario_usuario_id").GetString());
+        Assert.Equal(64, first.GetProperty("snapshot_hash").GetString()!.Length);
+        using var internalClient = f.Factory.CreateClient();
+        internalClient.DefaultRequestHeaders.Authorization = new("Bearer", new string('R', 48));
+        var internalUrl = $"/internal/v1/catalogo/publicaciones/{id}/snapshot" + query;
+        var privateResponse = await internalClient.GetAsync(internalUrl);
+        Assert.Equal(HttpStatusCode.OK, privateResponse.StatusCode);
+        var current = await privateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(first.GetProperty("snapshot_hash").GetString(), current.GetProperty("snapshot_hash").GetString());
+        Assert.Equal(first.GetProperty("snapshot_id").GetString(), current.GetProperty("snapshot_id").GetString());
+        Assert.Equal(25m, current.GetProperty("tarifa_diaria").GetDecimal());
+        // Repeated GETs are deterministic and do not mutate the publication revision.
+        var sameResponse = await publicClient.GetAsync(publicationUrl + "/snapshot" + query);
+        var same = await sameResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(first.GetProperty("snapshot_hash").GetString(), same.GetProperty("snapshot_hash").GetString());
+        using (var scope = f.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<CatalogoDbContext>();
+            var revision = await db.Publicaciones.AsNoTracking()
+                .Where(p => p.Id == id).Select(p => p.ActualizadoEn).SingleAsync();
+            Assert.NotEqual(default, revision);
+            Assert.Empty(db.ChangeTracker.Entries().Where(x => x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted));
+        }
+        var changed = await f.Client.PatchAsJsonAsync(publicationUrl, new { condiciones = new { tarifaDiaria = 26m } });
+        Assert.Equal(HttpStatusCode.OK, changed.StatusCode);
+        var next = await (await publicClient.GetAsync(publicationUrl + "/snapshot" + query)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(first.GetProperty("snapshot_hash").GetString(), next.GetProperty("snapshot_hash").GetString());
+        Assert.Equal(26m, next.GetProperty("tarifa_diaria").GetDecimal());
+        // The accepted conditions will be persisted by Reservations when the request is created.
+        Assert.Equal(first.GetProperty("snapshot_hash").GetString()!.Length, 64);
+        Assert.Equal(64, next.GetProperty("snapshot_hash").GetString()!.Length);
+        // Java LocalDateTime.toString() can omit :ss when seconds are zero.
+        Assert.Equal(HttpStatusCode.OK, (await internalClient.GetAsync(
+            $"/internal/v1/catalogo/publicaciones/{id}/snapshot?desde=2026-12-16T09:00&hasta=2026-12-16T12:00")).StatusCode);
+    }
+
+    [Fact]
+    public async Task SnapshotInternoFallaCerradoYPeriodoNoOfrecidoSeRechaza()
+    {
+        var publicationUrl = await Crear("Snapshot protegido");
+        var id = publicationUrl.Split('/').Last();
+        var query = "?desde=2026-12-17T09:00:00&hasta=2026-12-17T10:00:00";
+        var internalUrl = $"/internal/v1/catalogo/publicaciones/{id}/snapshot" + query;
+        using var unauthenticated = f.Factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
+        unauthenticated.DefaultRequestHeaders.Authorization = new("Bearer", "owner");
+        Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
+        unauthenticated.DefaultRequestHeaders.Authorization = new("Bearer", new string('W', 48));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
+        using var reservations = f.Factory.CreateClient();
+        reservations.DefaultRequestHeaders.Authorization = new("Bearer", new string('R', 48));
+        var snapshot = await (await reservations.GetAsync(internalUrl)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(snapshot.GetProperty("periodo_ofrecido").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await reservations.GetAsync(
+            $"/internal/v1/catalogo/publicaciones/{id}/snapshot?desde=2026-12-17T09:00:00Z&hasta=2026-12-17T10:00:00")).StatusCode);
+        var paused = await f.Client.PatchAsJsonAsync(publicationUrl + "/estado", new { estado = "PAUSADA" });
+        Assert.Equal(HttpStatusCode.OK, paused.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await unauthenticated.GetAsync(publicationUrl + "/snapshot" + query)).StatusCode);
+        var inactiveSnapshot = await (await reservations.GetAsync(internalUrl)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("PAUSADA", inactiveSnapshot.GetProperty("estado").GetString());
+    }
+
     [Fact] public async Task DatosV1YFiltrosSQL()
     {
         using var scope = f.Factory.Services.CreateScope();

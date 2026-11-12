@@ -34,3 +34,11 @@ docker compose --profile dotnet build api
 - [Contratos REST](docs/rest-api.md)
 - [Fechas locales y DATETIME(6)](docs/datetime-semantics.md)
 - [Rendimiento y Redis](docs/performance.md)
+
+## Contrato de snapshot con Reservas (v1)
+
+Catálogo añade `GET /api/v1/catalogo/publicaciones/{id}/snapshot?desde=...&hasta=...` para que el frontend obtenga la versión exacta de condiciones que el estudiante acepta. La API privada `GET /internal/v1/catalogo/publicaciones/{id}/snapshot?desde=...&hasta=...` requiere `Authorization: Bearer` y el secreto `CATALOG_RESERVATIONS_SERVICE_TOKEN` (mínimo 32 caracteres). El cuerpo es **plano en snake_case** y satisface `CatalogoRestAdapter` de Reservas. Ninguna de estas rutas reescribe `/api/v1/objetos`.
+
+**No hace falta migración adicional**; el hash se calcula con una lectura transaccional y las condiciones aceptadas quedan registradas en Reservas. El frontend debe mostrar las condiciones y enviar `aceptacion_condiciones` al crear solicitudes. Guía completa: [snapshot v1 y handoff](docs/reservations-snapshot-integration.md). Estas rutas internas no deben publicarse por el Gateway ni utilizarse con tokens Firebase.
+
+Para ejecutar el perfil .NET en Docker sin colisionar con Pagos en el mismo host, usar `CATALOGO_HOST_PORT=8084` (puerto interno `8082`). El `compose.yaml` propaga explícitamente `CATALOG_RESERVATIONS_SERVICE_TOKEN` al contenedor.

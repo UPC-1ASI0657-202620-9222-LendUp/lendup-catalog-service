@@ -137,6 +137,7 @@ public sealed class CatalogoDbContext(DbContextOptions<CatalogoDbContext> option
         m.Entity<ImagenRow>().HasOne<PublicacionRow>().WithMany().HasForeignKey(x => x.PublicacionId).OnDelete(DeleteBehavior.Restrict);
         m.Entity<ImagenRow>().HasIndex(x => new { x.PublicacionId, x.Orden }).IsUnique().HasDatabaseName("uq_imagenes_publicacion_0");
         m.Entity<ImagenRow>().HasIndex(x => x.PublicacionId).HasDatabaseName("idx_imagenes_publicacion_0");
+
     }
 }
 
@@ -179,6 +180,26 @@ public sealed class CatalogoRepository(CatalogoDbContext db) : ICatalogoReposito
             .OrderBy(d => d.Desde).ThenBy(d => d.Id).ToListAsync(ct)).ToLookup(d => d.PublicacionId);
         return rows.Select(p => p.Dominio(slots[p.Id])).ToArray();
     }
+    public async Task<SnapshotPublicacion> Snapshot(Guid id, PeriodoDisponibilidad periodo, bool publico, CancellationToken ct)
+    {
+        // Consistent non-locking snapshot across publication, category and offered intervals.
+        // The GET endpoint must never call SaveChanges or create audit records.
+        // Reservations owns the accepted contractual snapshot after POST /solicitudes.
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+        var row = await db.Publicaciones.AsNoTracking()
+            .SingleOrDefaultAsync(p => p.Id == id.ToString(), ct)
+            ?? throw CatalogoException.NoEncontrado();
+        var categoriaActiva = await db.Categorias.AsNoTracking()
+            .AnyAsync(c => c.Id == row.CategoriaId && c.Activa, ct);
+        if (publico && (row.Estado != "ACTIVA" || !categoriaActiva)) throw CatalogoException.NoEncontrado();
+        var slots = await db.Disponibilidades.AsNoTracking()
+            .Where(d => d.PublicacionId == row.Id).OrderBy(d => d.Desde).ThenBy(d => d.Id).ToListAsync(ct);
+        var publicacion = row.Dominio(slots);
+        var (snapshot, _) = SnapshotPublicacionFactory.Crear(publicacion, row.ActualizadoEn, categoriaActiva, periodo);
+        await tx.CommitAsync(ct);
+        return snapshot;
+    }
+
     public async Task Crear(Publicacion p, CancellationToken ct)
     {
         var row = new PublicacionRow { Id = p.Id.ToString(), PropietarioUsuarioId = p.PropietarioUsuarioId.ToString(), CreadoEn = DateTime.UtcNow };
