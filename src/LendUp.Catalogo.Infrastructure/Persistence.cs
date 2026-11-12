@@ -201,8 +201,8 @@ public sealed class CatalogoRepository(CatalogoDbContext db) : ICatalogoReposito
     {
         // The parent row lock serializes snapshot reads with any edit of the offer and its slots.
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
-        var rows = await db.Publicaciones.AsNoTracking()
-            .FromSqlInterpolated($"SELECT * FROM publicaciones WHERE id = {id.ToString()} FOR UPDATE").ToListAsync(ct);
+        var rows = await db.Publicaciones.FromSqlInterpolated($"SELECT * FROM publicaciones WHERE id = {id.ToString()} FOR UPDATE")
+            .AsNoTracking().ToListAsync(ct);
         var row = rows.SingleOrDefault() ?? throw CatalogoException.NoEncontrado();
         var categoriaActiva = await db.Categorias.AsNoTracking()
             .AnyAsync(c => c.Id == row.CategoriaId && c.Activa, ct);

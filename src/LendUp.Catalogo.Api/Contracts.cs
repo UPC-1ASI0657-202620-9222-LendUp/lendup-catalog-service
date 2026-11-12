@@ -74,7 +74,7 @@ public static class Solicitudes
             && estado.ToString() == texto ? estado : throw new ReglaDominioException("Estado inválido");
     public static DateTime Fecha(string texto)
     {
-        if (!DateTime.TryParseExact(texto, new[] { "yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF" }new[] { "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF" },
+        if (!DateTime.TryParseExact(texto, new[] { "yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF" },
             CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha)) throw new ReglaDominioException("Fecha local inválida, sin zona horaria");
         return DateTime.SpecifyKind(fecha, DateTimeKind.Unspecified);
     }

@@ -55,7 +55,7 @@ public sealed class Fixture : IAsyncLifetime
                 ["DB_HOST"] = cs.Server, ["DB_PORT"] = cs.Port.ToString(), ["DB_NAME"] = cs.Database,
                 ["DB_USERNAME"] = cs.UserID,["DB_PASSWORD"] = cs.Password,["REDIS_ENABLED"] = "true",
                 ["REDIS_CONNECTION"] = Redis.GetConnectionString()+",abortConnect=false",["REDIS_TTL_SECONDS"] = "2",
-                ["CATALOG_RESERVATIONS_SERVICE_TOKEN"] = new string('R', 48)["REDIS_CONNECTION"] = Redis.GetConnectionString()+",abortConnect=false",["REDIS_TTL_SECONDS"] = "2"
+                ["CATALOG_RESERVATIONS_SERVICE_TOKEN"] = new string('R', 48)
             }));
             b.ConfigureServices(s =>
             {
