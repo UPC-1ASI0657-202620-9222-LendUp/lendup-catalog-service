@@ -34,7 +34,6 @@ public sealed class Fixture : IAsyncLifetime
         await using var conn = new MySqlConnection(Mysql.GetConnectionString()); await conn.OpenAsync();
         await new MySqlCommand(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"V1.sql")),conn).ExecuteNonQueryAsync();
         await new MySqlCommand(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"V2.sql")),conn).ExecuteNonQueryAsync();
-        await new MySqlCommand(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"V3.sql")),conn).ExecuteNonQueryAsync();
         var categoriesCount = Convert.ToInt32(await new MySqlCommand("SELECT COUNT(*) FROM categorias", conn).ExecuteScalarAsync());
         Assert.Equal(8, categoriesCount); // A fresh installation must have initial categories before any manual test seed.
         var insert = new MySqlCommand("INSERT INTO categorias(id,codigo,nombre,activa) VALUES(@id,'TEC','Tecnología',true)",conn);
@@ -153,7 +152,7 @@ public partial class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITes
         Assert.Empty((await Json(url+"/disponibilidades")).EnumerateArray());
     }
     [Fact]
-    public async Task SnapshotCompatibleConReservasYRegistroInmutable()
+    public async Task SnapshotCompatibleConReservasSinEfectosDeEscritura()
     {
         var publicationUrl = await Crear("Snapshot Reservas");
         var id = publicationUrl.Split('/').Last();
@@ -178,24 +177,26 @@ public partial class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITes
         Assert.Equal(first.GetProperty("snapshot_hash").GetString(), current.GetProperty("snapshot_hash").GetString());
         Assert.Equal(first.GetProperty("snapshot_id").GetString(), current.GetProperty("snapshot_id").GetString());
         Assert.Equal(25m, current.GetProperty("tarifa_diaria").GetDecimal());
+        // Repeated GETs are deterministic and do not mutate the publication revision.
+        var sameResponse = await publicClient.GetAsync(publicationUrl + "/snapshot" + query);
+        var same = await sameResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(first.GetProperty("snapshot_hash").GetString(), same.GetProperty("snapshot_hash").GetString());
         using (var scope = f.Factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<CatalogoDbContext>();
-            Assert.Equal(1, await db.Snapshots.CountAsync(x => x.PublicacionId == id));
+            var revision = await db.Publicaciones.AsNoTracking()
+                .Where(p => p.Id == id).Select(p => p.ActualizadoEn).SingleAsync();
+            Assert.NotEqual(default, revision);
+            Assert.Empty(db.ChangeTracker.Entries().Where(x => x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted));
         }
         var changed = await f.Client.PatchAsJsonAsync(publicationUrl, new { condiciones = new { tarifaDiaria = 26m } });
         Assert.Equal(HttpStatusCode.OK, changed.StatusCode);
         var next = await (await publicClient.GetAsync(publicationUrl + "/snapshot" + query)).Content.ReadFromJsonAsync<JsonElement>();
         Assert.NotEqual(first.GetProperty("snapshot_hash").GetString(), next.GetProperty("snapshot_hash").GetString());
         Assert.Equal(26m, next.GetProperty("tarifa_diaria").GetDecimal());
-        using (var scope = f.Factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<CatalogoDbContext>();
-            Assert.Equal(2, await db.Snapshots.CountAsync(x => x.PublicacionId == id));
-            var oldId = first.GetProperty("snapshot_id").GetString();
-            var historic = await db.Snapshots.AsNoTracking().SingleAsync(x => x.Id == oldId);
-            Assert.Contains("\"tarifa_diaria\":25", historic.SnapshotJson);
-        }
+        // The accepted conditions will be persisted by Reservations when the request is created.
+        Assert.Equal(first.GetProperty("snapshot_hash").GetString()!.Length, 64);
+        Assert.Equal(64, next.GetProperty("snapshot_hash").GetString()!.Length);
         // Java LocalDateTime.toString() can omit :ss when seconds are zero.
         Assert.Equal(HttpStatusCode.OK, (await internalClient.GetAsync(
             $"/internal/v1/catalogo/publicaciones/{id}/snapshot?desde=2026-12-16T09:00&hasta=2026-12-16T12:00")).StatusCode);

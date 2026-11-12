@@ -134,7 +134,7 @@ Combinar nombre, categoriaId, campus, universidad, desde y hasta en GET /publica
 
 - Público: `GET /api/v1/catalogo/publicaciones/{id}/snapshot?desde=...&hasta=...` muestra condiciones y snapshot solo si la publicación y categoría están activas.
 - Privado: `GET /internal/v1/catalogo/publicaciones/{id}/snapshot?desde=...&hasta=...`, con token de servicio de Reservas; devuelve el mismo esquema plano snake_case, incluyendo el estado real si la oferta está pausada.
-- Ambos devuelven el mismo `snapshot_id`/`snapshot_hash` para misma revisión, publicación y periodo. El documento canónico se conserva inmutable en MySQL desde Flyway V3.
+- Ambos devuelven el mismo `snapshot_id`/`snapshot_hash` para misma revisión, publicación y periodo; las consultas GET no realizan escrituras. Reservas almacena las condiciones y aceptación histórica de la solicitud.
 - El intervalo ofertado no resta las reservas; Reservas es responsable de la exclusión final mediante su agenda. El frontend debe mostrar esta versión y enviar `aceptacion_condiciones` al hacer una solicitud.
 
 Ver [contratos de integración](reservations-snapshot-integration.md).

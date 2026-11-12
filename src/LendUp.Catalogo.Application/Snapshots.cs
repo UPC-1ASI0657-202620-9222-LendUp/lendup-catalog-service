@@ -15,9 +15,9 @@ public sealed record SnapshotPublicacion(
 
 /// <summary>
 /// A versioned, deterministic fingerprint of the effective offer.
-/// Hash includes a strictly increasing SQL revision and all offered intervals, so modifying
-/// and later restoring an offer can never silently reactivate an old consent.
-/// The canonical document is persisted once and must not be overwritten.
+/// Hash includes the monotonically increasing SQL revision and all offered intervals, so
+/// editing and then restoring an offer through Catálogo does not reactivate old consent.
+/// This is a read-only computation; accepted conditions are stored by Reservations.
 /// </summary>
 public static class SnapshotPublicacionFactory
 {

@@ -55,13 +55,13 @@ El JSON contiene exactamente estos campos:
 }
 ```
 
-Catálogo calcula un hash SHA-256 sobre un documento canónico que incluye la revisión SQL monotónica de la publicación, el periodo solicitado, su disponibilidad, todos los intervalos ofrecidos, el estado y las condiciones de precio/uso. El mismo estado produce el mismo ID/hash; cualquier modificación a través de `CatalogoRepository.Modificar` incrementa la revisión y cambia el hash. Al generar un nuevo snapshot se guarda el documento de auditoría una sola vez en `snapshots_publicacion`, sin actualizar ni borrar registros previos.
+Catálogo calcula un hash SHA-256 sobre un documento canónico que incluye la revisión SQL monotónica de la publicación, el periodo solicitado, su disponibilidad, todos los intervalos ofrecidos, el estado y las condiciones de precio/uso. El mismo estado produce el mismo ID/hash; cualquier modificación a través de `CatalogoRepository.Modificar` incrementa la revisión y cambia el hash. La consulta GET es de **solo lectura**: genera el identificador y el hash sin crear filas nuevas. Reservas persiste la aceptación, el hash y las condiciones acordadas cuando crea la solicitud. Un snapshot obsoleto ya no coincide con el vigente.
 
-La consulta se ejecuta bajo bloqueo `FOR UPDATE` del padre para no mezclar condiciones y disponibilidades de distintas revisiones. El snapshot **no bloquea ninguna reserva**: Reservas conserva el lock de `AgendaDelObjeto` y la autoridad contra dobles reservas. `periodo_ofrecido` valida únicamente disponibilidad publicada por el propietario.
+La consulta usa una transacción MySQL `REPEATABLE READ` para obtener una vista coherente de la publicación, categoría y disponibilidades sin bloquear escrituras ni producir efectos secundarios. El snapshot **no bloquea ninguna reserva**: Reservas conserva el lock de `AgendaDelObjeto` y la autoridad contra dobles reservas. `periodo_ofrecido` valida únicamente disponibilidad publicada por el propietario.
 
 ### Configuración del despliegue
 
-Primero aplicar Flyway `V3__create_catalog_snapshots.sql` (después de V1 y V2).
+**No se requiere una migración nueva**. Catálogo conserva el esquema V1/V2; el historial contractual de condiciones aceptadas corresponde a Reservas.
 
 En **Catálogo**, configurar un valor aleatorio fuerte (32-512 caracteres) como secreto de entorno:
 ```dotenv
@@ -85,7 +85,7 @@ Reemplazar `https://catalog.internal.example` con DNS privado y certificado TLS 
 3. Enviar la aceptación vigente a Reservas → solicitud creada; aceptación desactualizada → 409.
 4. Periodo no ofrecido → `periodo_ofrecido=false`; Reservas responde 409.
 5. Sin token de servicio o con Firebase ID token → 401; con token de Reservas → 200.
-6. Verificar que el documento persistido original no cambia después de una actualización.
+6. Repetir GET público/privado: hash estable y ninguna escritura nueva en Catálogo; confirmar en Reservas que la solicitud persiste la aceptación y condiciones históricas.
 7. En una carrera, Reservas sigue usando el bloqueo de agenda para confirmar la exclusión final.
 
 ### Pendientes de otros equipos
@@ -93,7 +93,7 @@ Reemplazar `https://catalog.internal.example` con DNS privado y certificado TLS 
 - **Reservas:** configurar el token y la plantilla, y usar el snapshot real con su formulario de consentimiento.
 - **Frontend:** solicitar el snapshot público para el intervalo seleccionado, mostrar sus condiciones y enviar `aceptacion_condiciones` completo. El código actual de `services/requests.service.ts` omite esos campos.
 - **Gateway:** mantener `/api/v1/catalogo/**` hacia Catálogo; no exponer `/internal/**`. Las rutas históricas `/api/v1/objetos/**` del frontend aún se dirigen al monolito y requieren migración coordinada.
-- **DevOps:** aplicar Flyway V3, inyectar el token en ambas tareas de ECS y permitir HTTPS privado entre servicios.
+- **DevOps:** inyectar el token en ambas tareas de ECS y permitir HTTPS privado entre servicios; no se necesita nueva migración.
 - **Préstamos:** publicar eventos del flujo (no es responsabilidad de Catálogo).
 - **Mensajería de Catálogo:** no se añade RabbitMQ sin un evento productor/consumidor acordado; evita introducir contratos incompatibles.
 
