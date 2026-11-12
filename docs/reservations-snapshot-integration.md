@@ -96,3 +96,5 @@ Reemplazar `https://catalog.internal.example` con DNS privado y certificado TLS 
 - **DevOps:** aplicar Flyway V3, inyectar el token en ambas tareas de ECS y permitir HTTPS privado entre servicios.
 - **Préstamos:** publicar eventos del flujo (no es responsabilidad de Catálogo).
 - **Mensajería de Catálogo:** no se añade RabbitMQ sin un evento productor/consumidor acordado; evita introducir contratos incompatibles.
+
+**Docker Compose local:** el perfil `dotnet` del servicio Catálogo publica por defecto `127.0.0.1:8084` hacia el puerto interno `8082` (`CATALOGO_HOST_PORT`). Si el Gateway corre en Docker y los servicios en Compose separados, configurar `CATALOG_SERVICE_URL=http://host.docker.internal:8084`; Reservas deberá usar la URL del mismo servicio, con red privada/host alcanzable desde su contenedor. El valor de `CATALOG_RESERVATIONS_SERVICE_TOKEN` del archivo `.env` sí se inyecta al contenedor por `compose.yaml`.
