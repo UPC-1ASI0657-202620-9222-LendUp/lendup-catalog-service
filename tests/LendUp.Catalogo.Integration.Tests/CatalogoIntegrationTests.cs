@@ -213,6 +213,9 @@ public partial class CatalogoIntegrationTests(Fixture f, Xunit.Abstractions.ITes
         Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
         unauthenticated.DefaultRequestHeaders.Authorization = new("Bearer", "owner");
         Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
+        // A Firebase outage must not affect authentication of service tokens.
+        unauthenticated.DefaultRequestHeaders.Authorization = new("Bearer", "dependency");
+        Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
         unauthenticated.DefaultRequestHeaders.Authorization = new("Bearer", new string('W', 48));
         Assert.Equal(HttpStatusCode.Unauthorized, (await unauthenticated.GetAsync(internalUrl)).StatusCode);
         using var reservations = f.Factory.CreateClient();
